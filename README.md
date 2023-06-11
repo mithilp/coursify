@@ -2,7 +2,20 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-First, run the development server:
+First, set up a .env file with the following variables:
+```
+PALM_API
+YOUTUBE_API
+FIREBASE_API_KEY
+FIREBASE_AUTH_DOMAIN
+FIREBASE_PROJECT_ID
+FIREBASE_STORAGE_BUCKET
+FIREBASE_SENDER_ID
+FIREBASE_APP_ID
+FIREBASE_MEASUREMENT_ID
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
