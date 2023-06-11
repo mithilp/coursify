@@ -13,21 +13,34 @@ import {
 import { useState, useCallback } from "react";
 
 import { FaPlus, FaTrash } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
 	const [units, setUnits] = useState(["", "", ""]);
 	const [title, setTitle] = useState("");
+	const router = useRouter();
+	const [isLoading, setIsLoading] = useState(false);
 
 	const submit = useCallback(
-		(e) => {
+		async (e) => {
 			e.preventDefault();
-			fetch("/api", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ title: title, units: units }),
-			});
+			setIsLoading(true);
+			try {
+				const res = await fetch("/api", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ title: title, units: units }),
+				});
+				const data = await res.json();
+				router.push("/" + data.courseId + "/0/0");
+				setIsLoading(false);
+			} catch (error) {
+				console.error(error);
+				alert(error);
+				setIsLoading(false);
+			}
 		},
 		[title, units]
 	);
@@ -35,7 +48,7 @@ export default function Home() {
 	return (
 		<form onSubmit={submit}>
 			<Stack px={20} pt={20} justify="center" spacing={10} w="100%">
-				<Heading as="h1" size="4xl" textAlign={"center"}>
+				<Heading as="h1" fontWeight={"black"} size="4xl" textAlign={"center"}>
 					Coursify
 				</Heading>
 				<Stack direction={["column", "row"]} spacing={4} align="center">
@@ -91,7 +104,13 @@ export default function Home() {
 					</Box>
 					<Divider orientation="horizontal" />
 				</Stack>
-				<Button type="submit">Submit</Button>
+				<Button
+					isLoading={isLoading}
+					loadingText={"Creating Your Course..."}
+					type="submit"
+				>
+					Submit
+				</Button>
 			</Stack>
 		</form>
 	);

@@ -5,7 +5,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 export default async function Page({ params }) {
 	const data = await getData(params);
-	return <div>{data.units[params.unitId].title}</div>;
+	return <div>Unit Name: {data.units[params.unitId].title}</div>;
 }
 
 async function getData(params) {

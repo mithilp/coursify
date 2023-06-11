@@ -3,9 +3,11 @@
 import {
 	AspectRatio,
 	Box,
+	Button,
 	Center,
 	Divider,
 	Heading,
+	Icon,
 	LinkBox,
 	LinkOverlay,
 	Spacer,
@@ -17,6 +19,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 import { Link as NextLink } from "next/link";
 import Question from "@/components/Question";
+import { FaChevronRight } from "react-icons/fa";
 
 export default async function Page({ params }) {
 	const data = await getData(params);
@@ -25,7 +28,7 @@ export default async function Page({ params }) {
 	return (
 		<Center w="100%" h="100%">
 			<Stack w="100%" h="100%">
-				<Stack direction="row" spacing={4}>
+				<Stack direction="row" spacing={8}>
 					<Stack w="100%">
 						<Stack spacing={0}>
 							<Box
@@ -53,16 +56,18 @@ export default async function Page({ params }) {
 								allowFullScreen
 							/>
 						</AspectRatio>
+
+						<Heading size="lg">Video Summary</Heading>
+						<Text>{chapterInfo.video_summary}</Text>
 					</Stack>
 					<Stack minW="xs">
 						<Heading size="lg">Knowledge Check</Heading>
 						{chapterInfo.quiz.map((question, index) => (
 							<Question question={question} key={index} />
 						))}
+						<Button>Submit</Button>
 					</Stack>
 				</Stack>
-				<Heading size="lg">Video Summary</Heading>
-				<Text>{chapterInfo.video_summary}</Text>
 				<Spacer />
 				<Divider />
 				<Stack direction="row">
@@ -70,7 +75,12 @@ export default async function Page({ params }) {
 						<LinkBox>
 							<p>Previous</p>
 							<h2>
-								<LinkOverlay as={NextLink} href="#">
+								<LinkOverlay
+									as={NextLink}
+									href={`/${params.courseId}/${params.unitId}/${
+										+params.chapterId - 1
+									}`}
+								>
 									{
 										data.units[params.unitId].chapters[+params.chapterId - 1]
 											.title
@@ -83,15 +93,25 @@ export default async function Page({ params }) {
 					)}
 					<Spacer />
 					<LinkBox>
-						<p>Next</p>
-						<h2>
-							<LinkOverlay as={NextLink} href="#">
-								{
-									data.units[params.unitId].chapters[+params.chapterId + 1]
-										.title
-								}
-							</LinkOverlay>
-						</h2>
+						<Stack direction={"row"} align="center">
+							<Stack justify="end" spacing={0}>
+								<Text textAlign="right">Next</Text>
+								<Heading size="sm" textAlign="right">
+									<LinkOverlay
+										as={NextLink}
+										href={`/${params.courseId}/${params.unitId}/${
+											+params.chapterId + 1
+										}`}
+									>
+										{
+											data.units[params.unitId].chapters[+params.chapterId + 1]
+												.title
+										}
+									</LinkOverlay>
+								</Heading>
+							</Stack>
+							<Icon as={FaChevronRight} />
+						</Stack>
 					</LinkBox>
 				</Stack>
 			</Stack>
