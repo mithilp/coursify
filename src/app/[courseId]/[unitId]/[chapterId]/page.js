@@ -19,7 +19,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 import { Link as NextLink } from "next/link";
 import Question from "@/components/Question";
-import { FaChevronRight } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 export default async function Page({ params }) {
 	const data = await getData(params);
@@ -73,46 +73,100 @@ export default async function Page({ params }) {
 				<Stack direction="row">
 					{data.units[params.unitId].chapters[+params.chapterId - 1] ? (
 						<LinkBox>
-							<p>Previous</p>
-							<h2>
-								<LinkOverlay
-									as={NextLink}
-									href={`/${params.courseId}/${params.unitId}/${
-										+params.chapterId - 1
-									}`}
-								>
-									{
-										data.units[params.unitId].chapters[+params.chapterId - 1]
-											.title
-									}
-								</LinkOverlay>
-							</h2>
+							<Stack direction={"row"} align="center">
+								<Icon as={FaChevronLeft} />
+								<Stack justify="start" spacing={0}>
+									<Text textAlign="left">Previous</Text>
+									<Heading size="md" textAlign="left">
+										<LinkOverlay
+											as={NextLink}
+											href={`/${params.courseId}/${params.unitId}/${
+												+params.chapterId - 1
+											}`}
+										>
+											{
+												data.units[params.unitId].chapters[
+													+params.chapterId - 1
+												].title
+											}
+										</LinkOverlay>
+									</Heading>
+								</Stack>
+							</Stack>
+						</LinkBox>
+					) : params.unitId > 0 ? (
+						<LinkBox>
+							<Stack direction={"row"} align="center">
+								<Icon as={FaChevronLeft} />
+								<Stack justify="start" spacing={0}>
+									<Text textAlign="left">Previous</Text>
+									<Heading size="md" textAlign="left">
+										<LinkOverlay
+											as={NextLink}
+											href={`/${params.courseId}/${+params.unitId - 1}/${
+												data.units[+params.unitId - 1].chapters.length - 1
+											}`}
+										>
+											{
+												data.units[+params.unitId - 1].chapters[
+													data.units[+params.unitId - 1].chapters.length - 1
+												].title
+											}
+										</LinkOverlay>
+									</Heading>
+								</Stack>
+							</Stack>
 						</LinkBox>
 					) : (
 						""
 					)}
 					<Spacer />
-					<LinkBox>
-						<Stack direction={"row"} align="center">
-							<Stack justify="end" spacing={0}>
-								<Text textAlign="right">Next</Text>
-								<Heading size="sm" textAlign="right">
-									<LinkOverlay
-										as={NextLink}
-										href={`/${params.courseId}/${params.unitId}/${
-											+params.chapterId + 1
-										}`}
-									>
-										{
-											data.units[params.unitId].chapters[+params.chapterId + 1]
-												.title
-										}
-									</LinkOverlay>
-								</Heading>
+					{data.units[params.unitId].chapters.length ==
+					+params.chapterId + 1 ? (
+						data.units.length == +params.unitId + 1 ? (
+							""
+						) : (
+							<LinkBox>
+								<Stack direction={"row"} align="center">
+									<Stack justify="end" spacing={0}>
+										<Text textAlign="right">Next</Text>
+										<Heading size="md" textAlign="right">
+											<LinkOverlay
+												as={NextLink}
+												href={`/${params.courseId}/${+params.unitId + 1}/0`}
+											>
+												{data.units[+params.unitId + 1].chapters[0].title}
+											</LinkOverlay>
+										</Heading>
+									</Stack>
+									<Icon as={FaChevronRight} />
+								</Stack>
+							</LinkBox>
+						)
+					) : (
+						<LinkBox>
+							<Stack direction={"row"} align="center">
+								<Stack justify="end" spacing={0}>
+									<Text textAlign="right">Next</Text>
+									<Heading size="md" textAlign="right">
+										<LinkOverlay
+											as={NextLink}
+											href={`/${params.courseId}/${params.unitId}/${
+												+params.chapterId + 1
+											}`}
+										>
+											{
+												data.units[params.unitId].chapters[
+													+params.chapterId + 1
+												].title
+											}
+										</LinkOverlay>
+									</Heading>
+								</Stack>
+								<Icon as={FaChevronRight} />
 							</Stack>
-							<Icon as={FaChevronRight} />
-						</Stack>
-					</LinkBox>
+						</LinkBox>
+					)}
 				</Stack>
 			</Stack>
 		</Center>

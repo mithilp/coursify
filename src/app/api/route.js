@@ -17,7 +17,7 @@ async function promptPalm(prompt) {
 				prompt: {
 					text: prompt,
 				},
-				temperature: 0.6,
+				temperature: 0.9,
 				top_k: 40,
 				top_p: 0.95,
 				candidate_count: 1,
@@ -35,7 +35,7 @@ async function promptPalm(prompt) {
 		}
 	);
 	const json = await response.json();
-	console.log("got prompt response");
+	console.log("got prompt response", json.candidates);
 	if (json.candidates[0] == undefined) {
 		console.log("prompt palm");
 	}
@@ -172,51 +172,49 @@ export async function POST(request) {
 			console.log("got summary \n", summary);
 			let quizPrompt = `
 				${transcript}
-				Above is a transcript of a video. Use the information in the transcript to create 2 multiple choice questions, each with 4 choices. Format the questions as a JavaScript array, like in the example below. MAKE SURE THE JSON IS FORMATTED WITH TABS AND NOT SPACES. MAKE SURE THE CODE CAN BE PARSED BY A JSON.parse() function and make sure to add the closing tags AND DON'T FORGET ANY COMMAS:
-				[
-					{
-						"question": "Who was the first president of the United States?",
-						"answers": [
-							{
-								"choice": "George Washington",
-								"correct": true
-							},
-							{
-								"choice": "Biden",
-								"correct": false
-							},
-							{
-								"choice": "trump",
-								"correct": false
-							},
-							{
-								"choice": "obama",
-								"correct": false
-							}
-						]
-					},
-					{
-						"question": "Who was the first president of the United States?",
-						"courseInfos": [
-							{
-								"choice": "George Washington",
-								"correct": true
-							},
-							{
-								"choice": "Biden",
-								"correct": false
-							},
-							{
-								"choice": "trump",
-								"correct": false
-							},
-							{
-								"choice": "obama",
-								"correct": false
-							}
-						]
-					}
-				]`;
+Above is a transcript of a video. Use the information in the transcript to create 2 multiple choice questions, each with 4 choices. Format the questions as a JavaScript array, like in the example below. Follow the format exactly, you can add onto it but follow the exact same format. MAKE SURE THE JSON IS FORMATTED WITH TABS AND NOT SPACES. MAKE SURE THE CODE CAN BE PARSED BY A JSON.parse() function and make sure to add the closing tags AND DON'T FORGET ANY COMMAS:
+[{"question": "Who was the first president of the United States?",
+"answers": [
+{
+"choice": "George Washington",
+"correct": true
+},
+{
+"choice": "Biden",
+"correct": false
+},
+{
+"choice": "trump",
+"correct": false
+},
+{
+"choice": "obama",
+"correct": false
+}
+]
+},
+{
+"question": "Who said the famous quote \"Every post is honorable in which a man can serve his country.\"?",
+"courseInfos": [
+{
+"choice": "George Washington",
+"correct": true
+},
+{
+"choice": "Biden",
+"correct": false
+},
+{
+"choice": "trump",
+"correct": false
+},
+{
+"choice": "obama",
+"correct": false
+}
+]
+}
+]`;
 			let quiz = await promptPalm(quizPrompt);
 			console.log("got palm quiz response:\n", quiz);
 			const quizFragments = quiz.split("[");
