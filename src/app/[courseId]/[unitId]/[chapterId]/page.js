@@ -48,8 +48,8 @@ export default async function Page({ params }) {
 							ratio={16 / 9}
 						>
 							<iframe
-								title="naruto"
-								src="https://www.youtube.com/embed/ZjLGyWsgbTA"
+								title="chapter video"
+								src={`https://www.youtube.com/embed/${chapterInfo.video_id}`}
 								allowFullScreen
 							/>
 						</AspectRatio>
@@ -62,7 +62,7 @@ export default async function Page({ params }) {
 					</Stack>
 				</Stack>
 				<Heading size="lg">Video Summary</Heading>
-				<Text>{chapterInfo.videoSummary}</Text>
+				<Text>{chapterInfo.video_summary}</Text>
 				<Spacer />
 				<Divider />
 				<Stack direction="row">
