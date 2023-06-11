@@ -6,8 +6,6 @@ import { useState } from "react";
 export default function Question({ question }) {
 	const [value, setValue] = useState();
 
-	console.log(question);
-
 	return (
 		<Box bg="whiteAlpha.300" borderRadius={"3xl"} p={4}>
 			<Stack>
@@ -19,9 +17,9 @@ export default function Question({ question }) {
 							type="radio"
 							id={i}
 							name="fav_language"
-							value={answer.text}
+							value={answer.choice}
 						/>
-						<label for={i}>{answer.text}</label>
+						<label htmlFor={i}>{answer.choice}</label>
 					</Stack>
 				))}
 			</Stack>

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import "dotenv/config";
 import { YoutubeTranscript } from "youtube-transcript";
+import { db } from "@/utils/config";
+import { addDoc, collection, doc } from "@firebase/firestore";
 
 async function promptPalm(prompt) {
 	const response = await fetch(
@@ -242,9 +244,13 @@ Important: Give the response in an array of JSON like the example below with the
 
 	course.units = newUnits;
 
-	console.log("data ready to add to firebase");
+	console.log("data ready to add to firebase\n", typeof course);
+
+	const docRef = await addDoc(collection(db, "courses"), course);
+
+	console.log("added to firebase", docRef.id);
 
 	return NextResponse.json({
-		message: course.units,
+		courseId: docRef.id,
 	});
 }
