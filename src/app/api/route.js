@@ -5,7 +5,6 @@ import { db } from "@/utils/config";
 import { addDoc, collection, doc } from "@firebase/firestore";
 
 async function promptPalm(prompt) {
-	console.log("sending prompt");
 	const response = await fetch(
 		`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${process.env.PALM_API}`,
 		{
@@ -35,10 +34,6 @@ async function promptPalm(prompt) {
 		}
 	);
 	const json = await response.json();
-	console.log("got prompt response", json.candidates);
-	if (json.candidates[0] == undefined) {
-		console.log("prompt palm");
-	}
 	return json.candidates[0].output;
 }
 
@@ -75,9 +70,6 @@ async function getTranscript(videoId) {
 			}
 		);
 		const json = await response.json();
-		if (json.items[0] == undefined) {
-			console.log("get transcript");
-		}
 		return json.items[0].snippet.title;
 	}
 }
@@ -92,7 +84,9 @@ function createObj(title, video_id, video_summary, quiz) {
 }
 
 export async function POST(request) {
+	console.log("got request");
 	const data = await request.json();
+	console.log("got data", data);
 	let units = "";
 	for (let i = 1; i <= data.units.length; i++) {
 		units += `Unit ${i}: ${data.units[i - 1]}\n`;
@@ -137,23 +131,39 @@ export async function POST(request) {
 		}
 	]
 	`;
-	let courseInfo = await promptPalm(prompt);
-	const courseInfoFragments = courseInfo.split("[");
-	let courseInfoString = "";
-	for (const i in courseInfoFragments) {
-		if (i == 0) {
-		} else {
-			if (i == courseInfoFragments.length - 1) {
-				courseInfoString += "[";
-				courseInfoString += courseInfoFragments[i].split("`")[0];
-			} else {
-				courseInfoString += "[";
-				courseInfoString += courseInfoFragments[i];
+
+	let courseInfo;
+	let gotCourseInfo = false;
+
+	while (!gotCourseInfo) {
+		console.log("starting for loop");
+		try {
+			console.log("starting to get expanded course info");
+			courseInfo = await promptPalm(prompt);
+			const courseInfoFragments = courseInfo.split("[");
+			let courseInfoString = "";
+			for (const i in courseInfoFragments) {
+				if (i == 0) {
+				} else {
+					if (i == courseInfoFragments.length - 1) {
+						courseInfoString += "[";
+						courseInfoString += courseInfoFragments[i].split("`")[0];
+					} else {
+						courseInfoString += "[";
+						courseInfoString += courseInfoFragments[i];
+					}
+				}
 			}
+			courseInfo = JSON.parse(courseInfoString);
+			gotCourseInfo = true;
+			console.log("got course info:");
+		} catch (error) {
+			console.log("getting course info failed, trying again");
 		}
 	}
-	courseInfo = JSON.parse(courseInfoString);
-	console.log("courseInfo:\n", courseInfo);
+
+	console.log(courseInfo);
+
 	let course = {
 		title: data.title,
 		units: [],
@@ -162,14 +172,26 @@ export async function POST(request) {
 	for (let i = 0; i < courseInfo.length; i++) {
 		let newChapters = [];
 		for (let j = 0; j < courseInfo[i].chapters.length; j++) {
+			console.log(`starting chapter ${j} of unit ${i}`);
 			let videoId = await searchYouTube(
 				courseInfo[i].chapters[j].youtube_search_query
 			);
 			let transcript = await getTranscript(videoId);
-			console.log(`starting chapter ${j} got transcript`);
+			console.log(`got transcript for chapter ${j}`);
 			let summaryPrompt = `summarize in 250 words or less and don't talk of the sponsors or anything unrelated to the main topic. also do not introduce what the summary is about:\n${transcript}`;
-			let summary = await promptPalm(summaryPrompt);
-			console.log("got summary \n", summary);
+
+			let summary;
+			let gotSummary = false;
+			while (!gotSummary) {
+				try {
+					summary = await promptPalm(summaryPrompt);
+					gotSummary = true;
+					console.log("got summary:");
+				} catch (error) {
+					console.log("getting summary failed, trying again");
+				}
+			}
+			console.log(summary);
 			let quizPrompt = `
 				${transcript}
 Above is a transcript of a video. Use the information in the transcript to create 2 multiple choice questions, each with 4 choices. Format the questions as a JavaScript array, like in the example below. Follow the format exactly, you can add onto it but follow the exact same format. MAKE SURE THE JSON IS FORMATTED WITH TABS AND NOT SPACES. MAKE SURE THE CODE CAN BE PARSED BY A JSON.parse() function and make sure to add the closing tags AND DON'T FORGET ANY COMMAS:
@@ -215,25 +237,36 @@ Above is a transcript of a video. Use the information in the transcript to creat
 ]
 }
 ]`;
-			let quiz = await promptPalm(quizPrompt);
-			console.log("got palm quiz response:\n", quiz);
-			const quizFragments = quiz.split("[");
-			let quizString = "";
-			for (const i in quizFragments) {
-				if (i == 0) {
-				} else {
-					if (i == quizFragments.length - 1) {
-						quizString += "[";
-						quizString += quizFragments[i].split("`")[0];
-					} else {
-						quizString += "[";
-						quizString += quizFragments[i];
+			let quizJSON;
+			let gotQuiz = false;
+			while (!gotQuiz) {
+				try {
+					let quiz = await promptPalm(quizPrompt);
+					console.log("got palm quiz response");
+					const quizFragments = quiz.split("[");
+					let quizString = "";
+					for (const i in quizFragments) {
+						if (i == 0) {
+						} else {
+							if (i == quizFragments.length - 1) {
+								quizString += "[";
+								quizString += quizFragments[i].split("`")[0];
+							} else {
+								quizString += "[";
+								quizString += quizFragments[i];
+							}
+						}
 					}
+					console.log("about to parse quiz:\n", quizString);
+					quizJSON = JSON.parse(quizString);
+					gotQuiz = true;
+					console.log("parsed quiz:");
+				} catch (error) {
+					console.log("getting quiz failed, trying again");
 				}
 			}
-			console.log("about to parse quiz:\n", quizString);
-			let quizJSON = JSON.parse(quizString);
-			console.log("JSON parsed quiz");
+			console.log(quizJSON);
+
 			let chapterObj = createObj(
 				courseInfo[i].chapters[j].chapter_title,
 				videoId,
@@ -243,6 +276,7 @@ Above is a transcript of a video. Use the information in the transcript to creat
 			newChapters.push(chapterObj);
 			console.log("created and added object");
 		}
+
 		newUnits.push({
 			title: courseInfo[i].title,
 			chapters: newChapters,
