@@ -24,9 +24,10 @@ export default function Home() {
 	const submit = useCallback(
 		async (e) => {
 			e.preventDefault();
+			console.log("submitting");
 			setIsLoading(true);
 			try {
-				const res = await fetch("/api", {
+				const res = await fetch("/api/create", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",

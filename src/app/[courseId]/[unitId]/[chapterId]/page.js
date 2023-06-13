@@ -14,14 +14,16 @@ import {
 	Stack,
 	Text,
 } from "@chakra-ui/react";
-import { db } from "../../../../utils/config";
-import { doc, getDoc } from "firebase/firestore";
 
 import { Link as NextLink } from "next/link";
 import Question from "@/components/Question";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
-export default async function Page({ params }) {
+import { useParams } from "next/navigation";
+
+export default async function Page() {
+	const params = useParams();
+
 	const data = await getData(params);
 	const chapterInfo = data.units[params.unitId].chapters[params.chapterId];
 
@@ -174,15 +176,7 @@ export default async function Page({ params }) {
 }
 
 async function getData(params) {
-	let data = {};
-
-	const document = await getDoc(doc(db, "courses", params.courseId));
-
-	if (document.exists()) {
-		data = document.data();
-	} else {
-		console.log("No such document!");
-	}
-
+	const response = await fetch("/api/course?id=" + params.courseId);
+	const data = await response.json();
 	return data;
 }
