@@ -1,10 +1,33 @@
-import { NextResponse } from "next/server";
-import "dotenv/config";
 import { YoutubeTranscript } from "youtube-transcript";
-import { db } from "@/utils/config";
-import { addDoc, collection, doc } from "@firebase/firestore";
+import { db } from "../../src/utils/firebase";
+import { getDoc, addDoc, doc, collection } from "@firebase/firestore";
 
-async function promptPalm(prompt) {
+export type Course = {
+	title: string;
+	units: {
+		title: string;
+		chapters: {
+			title: string;
+		}[];
+	}[];
+};
+
+export async function getCourse(id: string): Promise<any> {
+	console.log("id: ", id);
+	let data = {};
+	const document = await getDoc(doc(db, "courses", id));
+
+	if (document.exists()) {
+		data = document.data();
+		return data;
+	} else {
+		return {
+			error: "Course not found",
+		};
+	}
+}
+
+async function promptPalm(prompt: string) {
 	const response = await fetch(
 		`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${process.env.PALM_API}`,
 		{
@@ -37,7 +60,7 @@ async function promptPalm(prompt) {
 	return json.candidates[0].output;
 }
 
-async function searchYouTube(searchQuery) {
+async function searchYouTube(searchQuery: string) {
 	const response = await fetch(
 		`https://www.googleapis.com/youtube/v3/search?key=${process.env.YOUTUBE_API}&q=${searchQuery}&videoDuration=medium&videoEmbeddable=true&type=video&part=snippet&maxResults=1`,
 		{
@@ -51,7 +74,7 @@ async function searchYouTube(searchQuery) {
 	return json.items[0].id.videoId;
 }
 
-async function getTranscript(videoId) {
+async function getTranscript(videoId: string) {
 	try {
 		let transcript_arr = await YoutubeTranscript.fetchTranscript(videoId, {
 			lang: "en",
@@ -74,7 +97,12 @@ async function getTranscript(videoId) {
 	}
 }
 
-function createObj(title, video_id, video_summary, quiz) {
+function createObj(
+	title: string,
+	video_id: string,
+	video_summary: string,
+	quiz: Object[]
+) {
 	return {
 		title: title,
 		video_id: video_id,
@@ -83,10 +111,8 @@ function createObj(title, video_id, video_summary, quiz) {
 	};
 }
 
-export async function POST(request) {
-	console.log("got request");
-	const data = await request.json();
-	console.log("got data", data);
+export async function createCourse(data: any): Promise<any> {
+	console.log("got request\n", data);
 	let units = "";
 	for (let i = 1; i <= data.units.length; i++) {
 		units += `Unit ${i}: ${data.units[i - 1]}\n`;
@@ -143,9 +169,9 @@ export async function POST(request) {
 			const courseInfoFragments = courseInfo.split("[");
 			let courseInfoString = "";
 			for (const i in courseInfoFragments) {
-				if (i == 0) {
+				if (Number(i) === 0) {
 				} else {
-					if (i == courseInfoFragments.length - 1) {
+					if (Number(i) == courseInfoFragments.length - 1) {
 						courseInfoString += "[";
 						courseInfoString += courseInfoFragments[i].split("`")[0];
 					} else {
@@ -164,10 +190,6 @@ export async function POST(request) {
 
 	console.log(courseInfo);
 
-	let course = {
-		title: data.title,
-		units: [],
-	};
 	let newUnits = [];
 	for (let i = 0; i < courseInfo.length; i++) {
 		let newChapters = [];
@@ -188,6 +210,7 @@ export async function POST(request) {
 					gotSummary = true;
 					console.log("got summary:");
 				} catch (error) {
+					console.error(error);
 					console.log("getting summary failed, trying again");
 				}
 			}
@@ -246,9 +269,9 @@ Above is a transcript of a video. Use the information in the transcript to creat
 					const quizFragments = quiz.split("[");
 					let quizString = "";
 					for (const i in quizFragments) {
-						if (i == 0) {
+						if (Number(i) == 0) {
 						} else {
-							if (i == quizFragments.length - 1) {
+							if (Number(i) == quizFragments.length - 1) {
 								quizString += "[";
 								quizString += quizFragments[i].split("`")[0];
 							} else {
@@ -283,11 +306,14 @@ Above is a transcript of a video. Use the information in the transcript to creat
 		});
 		console.log("added unit: ", courseInfo[i].title);
 	}
-	course.units = newUnits;
+	let course = {
+		title: data.title,
+		units: newUnits,
+	};
 	console.log("data ready to add to firebase\n", typeof course);
 	const docRef = await addDoc(collection(db, "courses"), course);
 	console.log("added to firebase", docRef.id);
-	return NextResponse.json({
+	return {
 		courseId: docRef.id,
-	});
+	};
 }

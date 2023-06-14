@@ -1,9 +1,13 @@
-"use client";
-
 import { Input, Stack, Text } from "@chakra-ui/react";
 import { useState } from "react";
 
-export default function Unit({ index, onChange }) {
+type UnitProps = {
+	index: number;
+	onChange: (value: string) => void;
+	disabled: boolean;
+};
+
+export default function Unit({ index, onChange, disabled }: UnitProps) {
 	const [value, setValue] = useState("");
 
 	return (
@@ -12,7 +16,9 @@ export default function Unit({ index, onChange }) {
 				Unit {index + 1}:
 			</Text>
 			<Input
+				disabled={disabled}
 				isRequired
+				name={"unit"}
 				size="lg"
 				placeholder={
 					index == 0

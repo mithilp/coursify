@@ -1,13 +1,28 @@
-"use client";
-
+import type { LoaderArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useLoaderData, Link as RemixLink } from "@remix-run/react";
+import { getCourse } from "~/models/course.server";
 import { Box, Heading, Link, Stack, StackDivider } from "@chakra-ui/react";
-import { Link as NextLink } from "next/link";
 
-import { useParams } from "next/navigation";
+export const loader = async ({ params }: LoaderArgs) => {
+	const data = await getCourse(params.courseId as string);
 
-export default async function CourseLayout({ children }) {
-	const params = useParams();
-	const data = await getData(params);
+	console.log("running course page");
+	if (data.error) {
+		throw new Response(null, {
+			status: 404,
+			statusText: "Not Found",
+		});
+	} else {
+		return json({
+			params: params,
+			data: await getCourse(params.courseId as string),
+		});
+	}
+};
+
+export default function PostSlug() {
+	const { params, data } = useLoaderData<typeof loader>();
 
 	return (
 		<Stack direction={"row"} h="100vh">
@@ -22,7 +37,7 @@ export default async function CourseLayout({ children }) {
 				<Heading fontWeight={"black"} size="2xl">
 					{data.title}
 				</Heading>
-				{data.units.map((unit, i) => (
+				{data.units.map((unit: any, i: number) => (
 					<Box key={i}>
 						<Stack spacing={0}>
 							<Box
@@ -35,20 +50,20 @@ export default async function CourseLayout({ children }) {
 								Unit {i + 1}
 							</Box>
 							<Link
-								as={NextLink}
+								as={RemixLink}
 								fontSize="xl"
 								fontWeight={"bold"}
-								href={`/${params.courseId}/${i}`}
+								to={`/course/${params.courseId}/${i}`}
 							>
 								{unit.title}
 							</Link>
 						</Stack>
 						<Stack spacing={1}>
-							{unit.chapters.map((chapter, index) => (
+							{unit.chapters.map((chapter: any, index: number) => (
 								<Link
 									key={index}
-									as={NextLink}
-									href={`/${params.courseId}/${i}/${index}`}
+									as={RemixLink}
+									to={`/course/${params.courseId}/${i}/${index}`}
 								>
 									{chapter.title}
 								</Link>
@@ -58,14 +73,8 @@ export default async function CourseLayout({ children }) {
 				))}
 			</Stack>
 			<Box overflowY={"scroll"} minH="100vh" p={8} w="100%">
-				{children}
+				Course Name: {data.title}
 			</Box>
 		</Stack>
 	);
-}
-
-async function getData(params) {
-	const response = await fetch("/api/course?id=" + params.courseId);
-	const data = await response.json();
-	return data;
 }

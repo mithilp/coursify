@@ -1,25 +1,37 @@
 {
-  "name": "coursify",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@chakra-ui/next-js": "^2.1.4",
-    "@chakra-ui/react": "^2.7.0",
-    "@emotion/react": "^11.11.1",
-    "@emotion/styled": "^11.11.0",
-    "dotenv": "^16.1.4",
-    "firebase": "^9.22.2",
-    "framer-motion": "^10.12.16",
-    "next": "13.4.4",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "react-icons": "^4.9.0",
-    "youtube-transcript": "^1.0.6"
-  }
+	"private": true,
+	"sideEffects": false,
+	"scripts": {
+		"build": "remix build",
+		"dev": "remix dev",
+		"start": "remix-serve build",
+		"typecheck": "tsc"
+	},
+	"dependencies": {
+		"@chakra-ui/react": "^2.3.6",
+		"@emotion/react": "^11.10.4",
+		"@emotion/server": "^11.10.0",
+		"@emotion/styled": "^11.10.4",
+		"@remix-run/node": "~1.14.2",
+		"@remix-run/react": "~1.14.2",
+		"@remix-run/serve": "~1.14.2",
+		"firebase": "^9.22.2",
+		"framer-motion": "^6.5.1",
+		"isbot": "^3.6.5",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"react-icons": "^4.9.0",
+		"youtube-transcript": "^1.0.6"
+	},
+	"devDependencies": {
+		"@remix-run/dev": "~1.14.2",
+		"@remix-run/eslint-config": "~1.14.2",
+		"@types/react": "^18.0.25",
+		"@types/react-dom": "^18.0.8",
+		"eslint": "^8.27.0",
+		"typescript": "^4.8.4"
+	},
+	"engines": {
+		"node": ">=14"
+	}
 }
