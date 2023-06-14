@@ -1,10 +1,8 @@
-import type { LoaderArgs } from "@vercel/remix";
-import { json } from "@vercel/remix";
+import type { LoaderArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { useLoaderData, Link as RemixLink } from "@remix-run/react";
 import { getCourse } from "~/models/course.server";
 import { Box, Heading, Link, Stack, StackDivider } from "@chakra-ui/react";
-
-export const config = { runtime: "edge" };
 
 export const loader = async ({ params }: LoaderArgs) => {
 	const data = await getCourse(params.courseId as string);
