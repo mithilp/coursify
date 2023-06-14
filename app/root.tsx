@@ -1,5 +1,5 @@
 import { ChakraProvider, Box, Heading } from "@chakra-ui/react";
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction } from "@vercel/remix";
 import {
 	Links,
 	LiveReload,

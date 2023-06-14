@@ -16,8 +16,10 @@ import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState } from "react";
 
 import { FaPlus, FaTrash } from "react-icons/fa";
-import { ActionArgs, json, redirect } from "@remix-run/node";
+import { ActionArgs, json, redirect } from "@vercel/remix";
 import { createCourse } from "~/models/course.server";
+
+export const config = { runtime: "edge" };
 
 export async function action({ request }: ActionArgs) {
 	try {

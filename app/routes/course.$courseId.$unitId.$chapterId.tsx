@@ -1,5 +1,5 @@
-import type { LoaderArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import type { LoaderArgs } from "@vercel/remix";
+import { json } from "@vercel/remix";
 import { useLoaderData, Link as RemixLink } from "@remix-run/react";
 import { getCourse } from "~/models/course.server";
 import {
@@ -20,6 +20,8 @@ import {
 } from "@chakra-ui/react";
 import Question from "../../src/components/Question";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+
+export const config = { runtime: "edge" };
 
 export const loader = async ({ params }: LoaderArgs) => {
 	const data = await getCourse(params.courseId as string);
