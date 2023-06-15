@@ -1,23 +1,29 @@
-# Chakra UI Example
+## Fly Setup
 
-In this setup we will setup Chakra UI with Remix.
+1. [Install `flyctl`](https://fly.io/docs/getting-started/installing-flyctl/)
 
-Please note that when adding Chakra UI to a TypeScript project, a minimum TypeScript version of `4.1.0` is required
+2. Sign up and log in to Fly
 
-## Preview
+```sh
+flyctl auth signup
+```
 
-Open this example on [CodeSandbox](https://codesandbox.com):
+3. Setup Fly. It'll ask the following questions
 
-[![Open in CodeSandbox](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/github/remix-run/examples/tree/main/chakra-ui)
+```sh
+flyctl launch
 
-## Example
+Would you like to copy its configuration to the new app? Yes(y)
+Choose an app name (leaving blank will default to 'coursify') (leave blank)
+App coursify already exists, do you want to launch into that app? Yes (y)
+```
 
-This example shows how to use Chakra UI with Remix.
+4. To actually deploy it, all you'll you need to do is run this:
 
-Check [app/root.tsx](./app/root.tsx) where Chakra UI is imported and provides context to the component tree.
+```sh
+npm run deploy
+```
 
-Uncomment the thrown error on `./app/root.tsx` to see how Chackra UI handles your styles graciously on `CatchBoundary`. Then, navigate a **Not Found** route (like `/admin`) to see `ErrorBoundary` in action.
+You can run `flyctl info` to get the url and ip address of your server.
 
-## Related Links
-
-[Chakra UI](https://chakra-ui.com/guides/getting-started/remix-guide)
+Check out the [fly docs](https://fly.io/docs/getting-started/node/) for more information.

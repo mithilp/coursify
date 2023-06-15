@@ -56,6 +56,7 @@ async function promptPalm(prompt: string) {
 			}),
 		}
 	);
+	console.log("PaLM api status: ", response.status);
 	const json = await response.json();
 	return json.candidates[0].output;
 }
@@ -117,6 +118,7 @@ export async function createCourse(data: any): Promise<any> {
 	for (let i = 1; i <= data.units.length; i++) {
 		units += `Unit ${i}: ${data.units[i - 1]}\n`;
 	}
+
 	const prompt = `${units}
 	It is your job to create a course about ${data.title}. The user has requested to create chapters for each of the above units. Then, for each chapter, provide a detailed youtube search query that can be used to find an informative educational video for each chapter. Each query should give an educational informative course in youtube.
 	Important: Give the response in an array of JSON like the example below with the title of each array index corresponding to the unit title:
@@ -157,38 +159,41 @@ export async function createCourse(data: any): Promise<any> {
 		}
 	]
 	`;
-
 	let courseInfo;
 	let gotCourseInfo = false;
-
+	let tried = 0;
 	while (!gotCourseInfo) {
-		console.log("starting for loop");
-		try {
-			console.log("starting to get expanded course info");
-			courseInfo = await promptPalm(prompt);
-			const courseInfoFragments = courseInfo.split("[");
-			let courseInfoString = "";
-			for (const i in courseInfoFragments) {
-				if (Number(i) === 0) {
-				} else {
-					if (Number(i) == courseInfoFragments.length - 1) {
-						courseInfoString += "[";
-						courseInfoString += courseInfoFragments[i].split("`")[0];
+		if (tried < 5) {
+			try {
+				console.log("starting to get expanded course info");
+				courseInfo = await promptPalm(prompt);
+				const courseInfoFragments = courseInfo.split("[");
+				let courseInfoString = "";
+				for (const i in courseInfoFragments) {
+					if (Number(i) === 0) {
 					} else {
-						courseInfoString += "[";
-						courseInfoString += courseInfoFragments[i];
+						if (Number(i) == courseInfoFragments.length - 1) {
+							courseInfoString += "[";
+							courseInfoString += courseInfoFragments[i].split("`")[0];
+						} else {
+							courseInfoString += "[";
+							courseInfoString += courseInfoFragments[i];
+						}
 					}
 				}
+				courseInfo = JSON.parse(courseInfoString);
+				gotCourseInfo = true;
+				console.log("got course info");
+			} catch (error) {
+				console.log("FAILED: Error Info getting course info");
+				console.log("prompt:\n", prompt);
+				console.log("error:\n", error, "\n\n");
 			}
-			courseInfo = JSON.parse(courseInfoString);
-			gotCourseInfo = true;
-			console.log("got course info:");
-		} catch (error) {
-			console.log("getting course info failed, trying again");
+			tried++;
+		} else {
+			throw new Error("failed to get course info 5 times");
 		}
 	}
-
-	console.log(courseInfo);
 
 	let newUnits = [];
 	for (let i = 0; i < courseInfo.length; i++) {
@@ -204,17 +209,23 @@ export async function createCourse(data: any): Promise<any> {
 
 			let summary;
 			let gotSummary = false;
+			let tried = 0;
 			while (!gotSummary) {
-				try {
-					summary = await promptPalm(summaryPrompt);
-					gotSummary = true;
-					console.log("got summary:");
-				} catch (error) {
-					console.error(error);
-					console.log("getting summary failed, trying again");
+				if (tried < 5) {
+					try {
+						summary = await promptPalm(summaryPrompt);
+						gotSummary = true;
+						console.log("got summary");
+					} catch (error) {
+						console.log("FAILED: Error Info getting summary");
+						console.log("prompt:\n", summaryPrompt);
+						console.log("error:\n", error, "\n\n");
+					}
+					tried++;
+				} else {
+					throw new Error("tried getting summary too many times");
 				}
 			}
-			console.log(summary);
 			let quizPrompt = `
 				${transcript}
 Above is a transcript of a video. Use the information in the transcript to create 2 multiple choice questions, each with 4 choices. Format the questions as a JavaScript array, like in the example below. Follow the format exactly, you can add onto it but follow the exact same format. MAKE SURE THE JSON IS FORMATTED WITH TABS AND NOT SPACES. MAKE SURE THE CODE CAN BE PARSED BY A JSON.parse() function and make sure to add the closing tags AND DON'T FORGET ANY COMMAS:
@@ -262,33 +273,40 @@ Above is a transcript of a video. Use the information in the transcript to creat
 ]`;
 			let quizJSON;
 			let gotQuiz = false;
+			tried = 0;
 			while (!gotQuiz) {
-				try {
-					let quiz = await promptPalm(quizPrompt);
-					console.log("got palm quiz response");
-					const quizFragments = quiz.split("[");
-					let quizString = "";
-					for (const i in quizFragments) {
-						if (Number(i) == 0) {
-						} else {
-							if (Number(i) == quizFragments.length - 1) {
-								quizString += "[";
-								quizString += quizFragments[i].split("`")[0];
+				if (tried < 5) {
+					try {
+						let quiz = await promptPalm(quizPrompt);
+						console.log("got palm quiz response");
+						const quizFragments = quiz.split("[");
+						let quizString = "";
+						for (const i in quizFragments) {
+							if (Number(i) == 0) {
 							} else {
-								quizString += "[";
-								quizString += quizFragments[i];
+								if (Number(i) == quizFragments.length - 1) {
+									quizString += "[";
+									quizString += quizFragments[i].split("`")[0];
+								} else {
+									quizString += "[";
+									quizString += quizFragments[i];
+								}
 							}
 						}
+						console.log("about to parse quiz");
+						quizJSON = JSON.parse(quizString);
+						gotQuiz = true;
+						console.log("parsed quiz");
+					} catch (error) {
+						console.log("FAILED: Error Info getting guiz");
+						console.log("prompt:\n", quizPrompt);
+						console.log("error:\n", error, "\n\n");
 					}
-					console.log("about to parse quiz:\n", quizString);
-					quizJSON = JSON.parse(quizString);
-					gotQuiz = true;
-					console.log("parsed quiz:");
-				} catch (error) {
-					console.log("getting quiz failed, trying again");
+					tried++;
+				} else {
+					throw new Error("tried getting quiz too many times");
 				}
 			}
-			console.log(quizJSON);
 
 			let chapterObj = createObj(
 				courseInfo[i].chapters[j].chapter_title,

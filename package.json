@@ -5,6 +5,7 @@
 		"build": "remix build",
 		"dev": "remix dev",
 		"start": "remix-serve build",
+		"deploy": "fly deploy --remote-only",
 		"typecheck": "tsc"
 	},
 	"dependencies": {
@@ -24,6 +25,7 @@
 		"youtube-transcript": "^1.0.6"
 	},
 	"devDependencies": {
+		"@flydotio/dockerfile": "^0.2.15",
 		"@remix-run/dev": "~1.14.2",
 		"@remix-run/eslint-config": "~1.14.2",
 		"@types/react": "^18.0.25",
