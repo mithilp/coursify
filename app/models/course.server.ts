@@ -1,7 +1,6 @@
 import { YoutubeTranscript } from "youtube-transcript";
 import { db } from "../../src/utils/firebase";
 import { getDoc, addDoc, doc, collection } from "@firebase/firestore";
-import { redirect } from "@remix-run/node";
 
 export type Course = {
 	title: string;
@@ -332,5 +331,7 @@ Above is a transcript of a video. Use the information in the transcript to creat
 	console.log("data ready to add to firebase\n", typeof course);
 	const docRef = await addDoc(collection(db, "courses"), course);
 	console.log("added to firebase", docRef.id);
-	return redirect("/course/" + docRef.id + "/0/0");
+	return {
+		courseId: docRef.id,
+	};
 }
