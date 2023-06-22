@@ -2,6 +2,7 @@ import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, Link as RemixLink } from "@remix-run/react";
 import { getCourse } from "~/models/course.server";
+import { AiFillAppstore } from 'react-icons/ai';
 import {
 	AspectRatio,
 	Box,
@@ -52,6 +53,9 @@ export default function PostSlug() {
 				h="100vh"
 				divider={<StackDivider />}
 			>
+				<Link href={"/course"}>
+					<Button size={"lg"} fontWeight={"black"}><AiFillAppstore />Gallery</Button>
+				</Link>
 				<Heading fontWeight={"black"} size="2xl">
 					{data.title}
 				</Heading>

@@ -2,11 +2,11 @@ import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, Link as RemixLink } from "@remix-run/react";
 import { getCourse } from "~/models/course.server";
-import { Box, Heading, Link, Stack, StackDivider } from "@chakra-ui/react";
+import { Box, Heading, Link, Stack, StackDivider, Button } from "@chakra-ui/react";
+import { AiFillAppstore } from 'react-icons/ai';
 
 export const loader = async ({ params }: LoaderArgs) => {
 	const data = await getCourse(params.courseId as string);
-
 	console.log("running course page");
 	if (data.error) {
 		throw new Response(null, {
@@ -32,8 +32,12 @@ export default function PostSlug() {
 				p={8}
 				borderTopRightRadius={"3xl"}
 				h="100vh"
+				w="95vh"
 				divider={<StackDivider />}
 			>
+				<Link href={"/course"}>
+					<Button size={"lg"} fontWeight={"black"}><AiFillAppstore />Gallery</Button>
+				</Link>
 				<Heading fontWeight={"black"} size="2xl">
 					{data.title}
 				</Heading>
@@ -71,7 +75,7 @@ export default function PostSlug() {
 						</Stack>
 					</Box>
 				))}
-			</Stack>
+			T</Stack>
 			<Box overflowY={"scroll"} minH="100vh" p={8} w="100%">
 				Course Name: {data.title}
 			</Box>

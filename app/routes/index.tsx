@@ -26,8 +26,8 @@ export async function action({ request }: ActionArgs) {
 			title: formData.get("title") as string,
 			units: formData.getAll("unit") as string[],
 		});
-		console.log(response);
-		return redirect("/course/" + response.courseId + "/0/0");
+		console.log(response.courseId);
+		return redirect("/course/" + response.courseId);
 	} catch (error: unknown) {
 		console.error(error);
 		return json(
