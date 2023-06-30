@@ -24,14 +24,14 @@ export default function Question({ question }: QuestionProps) {
 										{answer.choice}
 									</Radio>
 							  ))
-							: question.choices.map((answer: any, i: number) => (
+							: question.choices.map((choices: any, i: number) => (
 									<Radio
 										size="md"
 										name={`question${i}`}
 										key={i}
 										colorScheme="blue"
 									>
-										{answer.choice}
+										{choices}
 									</Radio>
 							  ))}
 					</Stack>

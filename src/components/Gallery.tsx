@@ -26,7 +26,7 @@ export default function Gallery({ courseView, courseId }: couseViewProps) {
       flexDirection={"column"}>
       <Link href={`/course/${courseId}`} textDecoration={"none"}>
         <Stack direction={"column"} align="center" p={3}>
-          <Image src={courseView.image} alt='Dan Abramov' height={"50%"} width={"90%"}/>
+          <Image src={courseView.image} alt='Course Pic' height={"50%"} width={"90%"}/>
           <Text>{courseView.title.toUpperCase()}</Text>
           <Divider borderColor='gray.400' width={"90%"}/>
           <Text align="center">Units: {stringifyUnits(courseView.units)}</Text>

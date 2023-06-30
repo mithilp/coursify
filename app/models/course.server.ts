@@ -1,20 +1,8 @@
 import { YoutubeTranscript } from "youtube-transcript";
 import { db } from "../../src/utils/firebase";
 import { getDoc, addDoc, doc, collection, getDocs } from "@firebase/firestore";
-// import type { GoogleImagesParameters } from "serpapi";
-// import { getJson } from "serpapi";
 
-// fetch('https://async.scraperapi.com/jobs', {
-//   method: 'POST',
-//   headers: {
-//     'Content-Type': 'application/json'
-//   },
-//   // body: '{"apiKey": "c2eef46484b3515e2d3a6cb7600cdc70", "url": "http://httpbin.org/ip"}',
-//   body: JSON.stringify({
-//     'apiKey': 'c2eef46484b3515e2d3a6cb7600cdc70',
-//     'url': 'http://httpbin.org/ip'
-//   })
-// });
+
 export type Course = {
 	title: string;
 	units: {
@@ -27,8 +15,8 @@ export type Course = {
 export async function getAllCourses() {
 	const courses = await collection(db, "courses");
 	const coursesSnapshot = await getDocs(courses);
-	const coursesData = coursesSnapshot.docs.map(doc => doc.data());
-	const coursesId = coursesSnapshot.docs.map(doc => doc.id);
+	const coursesData = await coursesSnapshot.docs.map(doc => doc.data());
+	const coursesId = await coursesSnapshot.docs.map(doc => doc.id);
 	return {coursesId, coursesData};
 }
 
@@ -114,7 +102,7 @@ async function getTranscript(videoId: string) {
 		});
 		let transcript = "";
 		for (let i = 0; i < transcript_arr.length; i++) {
-			transcript += transcript_arr[i].text + "";
+			transcript += transcript_arr[i].text + " ";
 		}
 		return transcript.replaceAll("\n", " ");
 	} catch (e) {
@@ -212,7 +200,7 @@ export async function createCourse(data: any): Promise<any> {
 						}
 					}
 				}
-				courseInfo = JSON.parse(courseInfoString);
+				courseInfo = await JSON.parse(courseInfoString);
 				gotCourseInfo = true;
 				// console.log("got course info");
 			} catch (error) {
@@ -246,7 +234,7 @@ export async function createCourse(data: any): Promise<any> {
 					try {
 						summary = await promptPalm(summaryPrompt);
 						gotSummary = true;
-						// console.log("got summary");
+						console.log("got summary");
 					} catch (error) {
 						console.log("FAILED: Error Info getting summary");
 						console.log("prompt:\n", summaryPrompt);
@@ -257,49 +245,20 @@ export async function createCourse(data: any): Promise<any> {
 					throw new Error("tried getting summary too many times");
 				}
 			}
-			let quizPrompt = `
-				${transcript}
-Above is a transcript of a video. Use the information in the transcript to create 2 multiple choice questions, each with 4 choices. Format the questions as a JavaScript array, like in the example below. Follow the format exactly, you can add onto it but follow the exact same format. MAKE SURE THE JSON IS FORMATTED WITH TABS AND NOT SPACES. MAKE SURE THE CODE CAN BE PARSED BY A JSON.parse() function and make sure to add the closing tags AND DON'T FORGET ANY COMMAS:
-[{"question": "Who was the first president of the United States?",
-"answers": [
+			let quizPrompt = `${transcript}\n
+Generate at least a 3 question educational informative quiz on the text given above. The questions should be on the material of the entire transcript as a whole. The question should be knowledgeable and not about the specifics. The question should relate to ${courseInfo[i].chapters[j].title}. The output has to be an array of questions. Each question should have a question, which is a string question, the choices, which is 4 possible answer choices represented in an array, and the answer, which is the index of the answer in the choices array.
+
+Here is an example answer:
+[
 {
-"choice": "George Washington",
-"correct": true
+	"question": "What is the (sqrt(16)+5-4)/1/24",
+	"choices": ["100", "120", "40", "12"],
+	"answer": 1
 },
 {
-"choice": "Biden",
-"correct": false
-},
-{
-"choice": "trump",
-"correct": false
-},
-{
-"choice": "obama",
-"correct": false
-}
-]
-},
-{
-"question": "Who said the famous quote \"Every post is honorable in which a man can serve his country.\"?",
-"courseInfos": [
-{
-"choice": "George Washington",
-"correct": true
-},
-{
-"choice": "Biden",
-"correct": false
-},
-{
-"choice": "trump",
-"correct": false
-},
-{
-"choice": "obama",
-"correct": false
-}
-]
+	"question": "What is a forrier trnasformation",
+	"choices": ["a transform that converts a function into a form that describes the frequencies present in the original function", "infinite sum of terms that approximate a function as a polynomial", "mathematical function that can be formally defined as an improper Riemann integral", "certain kind of approximation of an integral by a finite sum"],
+	"answer": 0
 }
 ]`;
 			let quizJSON;
@@ -325,7 +284,7 @@ Above is a transcript of a video. Use the information in the transcript to creat
 							}
 						}
 						// console.log("about to parse quiz");
-						quizJSON = JSON.parse(quizString);
+						quizJSON = await JSON.parse(quizString);
 						gotQuiz = true;
 						// console.log("parsed quiz");
 					} catch (error) {
@@ -356,17 +315,18 @@ Above is a transcript of a video. Use the information in the transcript to creat
 		console.log("added unit: ", courseInfo[i].title);
 	}
 	let course_img = await imageSearch(data.title);
-	let course_url = course_img.suggested_searches[0].thumbnail;
+	let course_url = await course_img.suggested_searches[0].thumbnail;
 	// console.log(course_url);
 	let course = {
 		title: data.title,
 		image: course_url,
 		units: newUnits,
 	};
-	// console.log("data ready to add to firebase\n", typeof course);
+
+	console.log("data ready to add to firebase\n", typeof course);
 	const docRef = await addDoc(collection(db, "courses"), course);
 	console.log("added to firebase", docRef.id);
 	return {
-		courseId: docRef.id,
+		courseId: await docRef.id,
 	};
 }
