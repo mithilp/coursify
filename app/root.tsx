@@ -1,4 +1,13 @@
-import { ChakraProvider, Box, Heading } from "@chakra-ui/react";
+import {
+	ChakraProvider,
+	Box,
+	Heading,
+	Text,
+	Flex,
+	Link,
+	HStack,
+	StackDivider,
+} from "@chakra-ui/react";
 import type { MetaFunction } from "@remix-run/node";
 import {
 	Links,
@@ -10,6 +19,8 @@ import {
 	useCatch,
 } from "@remix-run/react";
 import theme from "../src/utils/theme";
+
+import { Link as RemixLink } from "@remix-run/react";
 
 export const meta: MetaFunction = () => ({
 	charset: "utf-8",
@@ -46,7 +57,33 @@ export default function App() {
 	return (
 		<Document>
 			<ChakraProvider theme={theme}>
-				<Outlet />
+				<Box h="100vh" overflow={"scroll"}>
+					<Flex
+						as="header"
+						align="center"
+						justify="space-between"
+						bg="gray.800"
+						px={4}
+						h="90px"
+						position="sticky"
+						top={0}
+						zIndex="sticky"
+						boxShadow={"xl"}
+					>
+						<Text fontSize="2xl" fontWeight="black" color="white">
+							Coursify
+						</Text>
+						<HStack spacing={4}>
+							<Link as={RemixLink} to="/" mx={2} color="white">
+								Create New Course
+							</Link>
+							<Link as={RemixLink} to="/gallery" mx={2} color="white">
+								Course Gallery
+							</Link>
+						</HStack>
+					</Flex>
+					<Outlet />
+				</Box>
 			</ChakraProvider>
 		</Document>
 	);

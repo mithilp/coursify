@@ -2,7 +2,6 @@ import { YoutubeTranscript } from "youtube-transcript";
 import { db } from "../../src/utils/firebase";
 import { getDoc, addDoc, doc, collection, getDocs } from "@firebase/firestore";
 
-
 export type Course = {
 	title: string;
 	units: {
@@ -15,13 +14,13 @@ export type Course = {
 export async function getAllCourses() {
 	const courses = await collection(db, "courses");
 	const coursesSnapshot = await getDocs(courses);
-	const coursesData = await coursesSnapshot.docs.map(doc => doc.data());
-	const coursesId = await coursesSnapshot.docs.map(doc => doc.id);
-	return {coursesId, coursesData};
+	const coursesData = await coursesSnapshot.docs.map((doc) => doc.data());
+	const coursesId = await coursesSnapshot.docs.map((doc) => doc.id);
+	return { coursesId, coursesData };
 }
 
 export async function getCourse(id: string): Promise<any> {
-	// console.log("id: ", id);
+	console.log("get course id", id);
 	let data = {};
 	const document = await getDoc(doc(db, "courses", id));
 
@@ -39,7 +38,7 @@ async function imageSearch(prompt: string) {
 	const response = await fetch(
 		`https://serpapi.com/search.json?engine=google_images&api_key=${process.env.SERP_API}&gl=us&q=${prompt}`,
 		{
-			method: "GET"
+			method: "GET",
 		}
 	);
 	let responseJSON = await response.json();
@@ -132,7 +131,7 @@ function createObj(
 }
 
 export async function createCourse(data: any): Promise<any> {
-	// console.log("got request\n", data);
+	console.log("got request with following info:\n", data);
 	let units = "";
 	for (let i = 1; i <= data.units.length; i++) {
 		units += `Unit ${i}: ${data.units[i - 1]}\n`;
@@ -184,7 +183,7 @@ export async function createCourse(data: any): Promise<any> {
 	while (!gotCourseInfo) {
 		if (tried < 5) {
 			try {
-				// console.log("starting to get expanded course info");
+				console.log("starting to get expanded course info");
 				courseInfo = await promptPalm(prompt);
 				const courseInfoFragments = courseInfo.split("[");
 				let courseInfoString = "";
@@ -202,7 +201,7 @@ export async function createCourse(data: any): Promise<any> {
 				}
 				courseInfo = await JSON.parse(courseInfoString);
 				gotCourseInfo = true;
-				// console.log("got course info");
+				console.log("got course info");
 			} catch (error) {
 				console.log("FAILED: Error Info getting course info");
 				console.log("prompt:\n", prompt);
@@ -218,12 +217,12 @@ export async function createCourse(data: any): Promise<any> {
 	for (let i = 0; i < courseInfo.length; i++) {
 		let newChapters = [];
 		for (let j = 0; j < courseInfo[i].chapters.length; j++) {
-			// console.log(`starting chapter ${j} of unit ${i}`);
+			console.log(`starting chapter ${+j + 1} of unit ${+i + 1}`);
 			let videoId = await searchYouTube(
 				courseInfo[i].chapters[j].youtube_search_query
 			);
 			let transcript = await getTranscript(videoId);
-			// console.log(`got transcript for chapter ${j}`);
+			console.log(`got transcript for chapter ${+j + 1}`);
 			let summaryPrompt = `summarize in 250 words or less and don't talk of the sponsors or anything unrelated to the main topic. also do not introduce what the summary is about:\n${transcript}`;
 
 			let summary;
@@ -268,7 +267,7 @@ Here is an example answer:
 				if (tried < 5) {
 					try {
 						let quiz = await promptPalm(quizPrompt);
-						// console.log("got palm quiz response");
+						console.log("got palm quiz response");
 						const quizFragments = quiz.split("[");
 						let quizString = "";
 						for (const i in quizFragments) {
@@ -283,10 +282,10 @@ Here is an example answer:
 								}
 							}
 						}
-						// console.log("about to parse quiz");
+						console.log("about to parse quiz");
 						quizJSON = await JSON.parse(quizString);
 						gotQuiz = true;
-						// console.log("parsed quiz");
+						console.log("parsed quiz");
 					} catch (error) {
 						console.log("FAILED: Error Info getting guiz");
 						console.log("prompt:\n", quizPrompt);
@@ -305,7 +304,7 @@ Here is an example answer:
 				quizJSON
 			);
 			newChapters.push(chapterObj);
-			// console.log("created and added object");
+			console.log("created and added object");
 		}
 
 		newUnits.push({
@@ -316,7 +315,7 @@ Here is an example answer:
 	}
 	let course_img = await imageSearch(data.title);
 	let course_url = await course_img.suggested_searches[0].thumbnail;
-	// console.log(course_url);
+	console.log(course_url);
 	let course = {
 		title: data.title,
 		image: course_url,
