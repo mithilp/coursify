@@ -17,19 +17,17 @@ import { useState } from "react";
 
 import { FaPlus, FaTrash } from "react-icons/fa";
 import { ActionArgs, json, redirect } from "@remix-run/node";
-import { createCourse } from "~/models/course.server";
+import { createChapters } from "~/models/course.server";
 
 export async function action({ request }: ActionArgs) {
 	try {
 		const formData = await request.formData();
-		const response = await createCourse({
-			title: formData.get("title") as string,
-			units: formData.getAll("unit") as string[],
-		});
-		console.log("THIS SHOULD BE THE COURSEID: \n\n:", response.courseId);
-		// return redirect(`/course/${response.courseId}/0/0`);
-		//testing to find out if routing works
-		return redirect(`/course/B4GEcXJTvj9xkZ0ilIC4/0/0`);
+		const response = await createChapters(
+			formData.get("title") as string,
+			formData.getAll("unit") as string[]
+		);
+		console.log(response);
+		return redirect(`/create/${response.courseId}/`);
 	} catch (error: unknown) {
 		console.error(error);
 		return json(
@@ -121,7 +119,7 @@ export default function Home() {
 						loadingText={"Creating Your Course..."}
 						type="submit"
 					>
-						Submit
+						Let's Go!
 					</Button>
 
 					{actionData?.message && (

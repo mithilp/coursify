@@ -52,8 +52,6 @@ function Document({
 }
 
 export default function App() {
-	// throw new Error("💣💥 Booooom");
-
 	return (
 		<Document>
 			<ChakraProvider theme={theme}>
@@ -70,7 +68,13 @@ export default function App() {
 						zIndex="sticky"
 						boxShadow={"xl"}
 					>
-						<Text fontSize="2xl" fontWeight="black" color="white">
+						<Text
+							as={RemixLink}
+							to="/"
+							fontSize="2xl"
+							fontWeight="black"
+							color="white"
+						>
 							Coursify
 						</Text>
 						<HStack spacing={4}>

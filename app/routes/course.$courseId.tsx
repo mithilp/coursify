@@ -13,7 +13,6 @@ import {
 
 export const loader = async ({ params }: LoaderArgs) => {
 	const data = await getCourse(params.courseId as string);
-	console.log("running course page");
 	if (data.error) {
 		throw new Response(null, {
 			status: 404,

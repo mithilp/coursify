@@ -118,13 +118,19 @@ export default function PostSlug() {
 							>
 								<iframe
 									title="chapter video"
-									src={`https://www.youtube.com/embed/${chapterInfo.video_id}`}
+									src={`https://www.youtube.com/embed/${
+										chapterInfo.video ? chapterInfo.video : chapterInfo.video_id
+									}`}
 									allowFullScreen
 								/>
 							</AspectRatio>
 
 							<Heading size="lg">Video Summary</Heading>
-							<Text>{chapterInfo.video_summary}</Text>
+							<Text>
+								{chapterInfo.summary
+									? chapterInfo.summary
+									: chapterInfo.video_summary}
+							</Text>
 						</Stack>
 						<Stack minW="xs">
 							<Heading size="lg">Knowledge Check</Heading>
