@@ -316,9 +316,11 @@ export default function FinishCourse() {
 									);
 								}}
 								onComplete={(chapterInfo: any) => {
-									setIsLoading((prev) =>
-										prev.splice(prev.indexOf(`${i} ${j}`), 1)
-									);
+									const newLoading = isLoading;
+									if (newLoading.indexOf(`${i} ${j}`) !== -1) {
+										newLoading.splice(newLoading.indexOf(`${i} ${j}`), 1);
+										setIsLoading(newLoading);
+									}
 
 									const updatedData = finalData;
 									updatedData[i][j] = chapterInfo;
