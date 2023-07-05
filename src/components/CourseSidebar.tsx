@@ -30,19 +30,20 @@ const CourseSidebar = ({ data, params }: SidebarProps) => {
 
 	return (
 		<>
-			<IconButton
+			<Button
 				colorScheme="gray"
 				position={"fixed"}
-				top={6}
+				top={105}
 				right={4}
 				zIndex={11}
-				aria-label="Open Menu"
 				size="sm"
-				icon={<FaBars />}
+				leftIcon={<FaBars />}
 				display={{ base: "inline-flex", md: "none" }}
 				ref={btnRef}
 				onClick={onOpen}
-			/>
+			>
+				Open Menu
+			</Button>
 			<Stack
 				bg="whiteAlpha.300"
 				w={"md"}

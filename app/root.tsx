@@ -83,12 +83,15 @@ export default function App() {
 						>
 							Coursify
 						</Text>
-						<HStack spacing={{ base: 2, md: 4 }}>
+						<HStack spacing={{ base: 1, md: 4 }}>
 							<Link as={RemixLink} to="/" mx={2} color="white">
 								Create New Course
 							</Link>
 							<Link as={RemixLink} to="/gallery" mx={2} color="white">
-								Course Gallery
+								Gallery
+							</Link>
+							<Link as={RemixLink} to="/contact" mx={2} color="white">
+								Contact
 							</Link>
 						</HStack>
 					</Flex>

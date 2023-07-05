@@ -48,7 +48,12 @@ export default function Home() {
 	return (
 		<Form method="post" action="/?index">
 			<Stack maxW="xl" justify="center" margin={"auto"} p={8} spacing={4}>
-				<Heading as="h1" fontWeight={"black"} size="4xl" textAlign={"center"}>
+				<Heading
+					as="h1"
+					fontWeight={"black"}
+					size={{ base: "3xl", md: "4xl" }}
+					textAlign={"center"}
+				>
 					Coursify
 				</Heading>
 
