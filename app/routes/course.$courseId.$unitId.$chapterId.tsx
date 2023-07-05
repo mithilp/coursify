@@ -1,6 +1,6 @@
 import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, Link as RemixLink } from "@remix-run/react";
+import { useLoaderData, Link } from "@remix-run/react";
 import { getCourse } from "~/models/course.server";
 import {
 	AspectRatio,
@@ -13,12 +13,11 @@ import {
 	LinkOverlay,
 	Spacer,
 	Stack,
-	StackDivider,
 	Text,
-	Link,
 } from "@chakra-ui/react";
 import Question from "../../src/components/Question";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
+import CourseSidebar from "src/components/CourseSidebar";
 
 export const loader = async ({ params }: LoaderArgs) => {
 	const data = await getCourse(params.courseId as string);
@@ -42,59 +41,11 @@ export default function PostSlug() {
 	const chapterInfo = data.units[params.unitId].chapters[params.chapterId];
 
 	return (
-		<Stack direction={"row"} h="calc(100vh - 90px)">
-			<Stack
-				bg="whiteAlpha.300"
-				minW={"2xs"}
-				p={8}
-				top={90}
-				position="sticky"
-				h="100%"
-				borderTopRightRadius={"3xl"}
-				boxShadow={"xl"}
-				divider={<StackDivider />}
-			>
-				<Heading fontWeight={"black"} size="2xl">
-					{data.title}
-				</Heading>
-				{data.units.map((unit: any, i: number) => (
-					<Box key={i}>
-						<Stack spacing={0}>
-							<Box
-								color="whiteAlpha.600"
-								fontWeight="semibold"
-								letterSpacing="wide"
-								fontSize="xs"
-								textTransform="uppercase"
-							>
-								Unit {i + 1}
-							</Box>
-							<Link
-								as={RemixLink}
-								fontSize="xl"
-								fontWeight={"bold"}
-								to={`/course/${params.courseId}/${i}`}
-							>
-								{unit.title}
-							</Link>
-						</Stack>
-						<Stack spacing={1}>
-							{unit.chapters.map((chapter: any, index: number) => (
-								<Link
-									key={index}
-									as={RemixLink}
-									to={`/course/${params.courseId}/${i}/${index}`}
-								>
-									{chapter.title}
-								</Link>
-							))}
-						</Stack>
-					</Box>
-				))}
-			</Stack>
+		<Stack direction={"row"} h="100%">
+			<CourseSidebar data={data} params={params} />
 			<Box overflowY={"scroll"} p={8} w="100%">
 				<Stack w="100%" h="100%">
-					<Stack direction="row" spacing={8}>
+					<Stack direction={{ base: "column", md: "row" }} spacing={8}>
 						<Stack w="100%">
 							<Stack spacing={0}>
 								<Box
@@ -132,7 +83,8 @@ export default function PostSlug() {
 									: chapterInfo.video_summary}
 							</Text>
 						</Stack>
-						<Stack minW="xs">
+
+						<Stack w={{ base: "100%", md: "xl" }}>
 							<Heading size="lg">Knowledge Check</Heading>
 							{chapterInfo.quiz.map((question: any, index: number) => (
 								<Question question={question} key={index} />
@@ -151,7 +103,7 @@ export default function PostSlug() {
 										<Text textAlign="left">Previous</Text>
 										<Heading size="md" textAlign="left">
 											<LinkOverlay
-												as={RemixLink}
+												as={Link}
 												to={`/course/${params.courseId}/${params.unitId}/${
 													+params.chapterId - 1
 												}`}
@@ -174,7 +126,7 @@ export default function PostSlug() {
 										<Text textAlign="left">Previous</Text>
 										<Heading size="md" textAlign="left">
 											<LinkOverlay
-												as={RemixLink}
+												as={Link}
 												to={`/course/${params.courseId}/${+params.unitId - 1}/${
 													data.units[+params.unitId - 1].chapters.length - 1
 												}`}
@@ -204,7 +156,7 @@ export default function PostSlug() {
 											<Text textAlign="right">Next</Text>
 											<Heading size="md" textAlign="right">
 												<LinkOverlay
-													as={RemixLink}
+													as={Link}
 													to={`/course/${params.courseId}/${
 														+params.unitId + 1
 													}/0`}
@@ -224,7 +176,7 @@ export default function PostSlug() {
 										<Text textAlign="right">Next</Text>
 										<Heading size="md" textAlign="right">
 											<LinkOverlay
-												as={RemixLink}
+												as={Link}
 												to={`/course/${params.courseId}/${params.unitId}/${
 													+params.chapterId + 1
 												}`}

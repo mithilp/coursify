@@ -14,8 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState } from "react";
-
-import { FaPlus, FaTrash } from "react-icons/fa";
+import { FaPlus, FaTrash } from "react-icons/fa6";
 import { ActionArgs, json, redirect } from "@remix-run/node";
 import { createChapters } from "~/models/course.server";
 
@@ -48,16 +47,32 @@ export default function Home() {
 
 	return (
 		<Form method="post" action="/?index">
-			<Stack px={20} pt={20} justify="center" spacing={10} w="100%">
+			<Stack maxW="xl" justify="center" margin={"auto"} p={8} spacing={4}>
 				<Heading as="h1" fontWeight={"black"} size="4xl" textAlign={"center"}>
 					Coursify
 				</Heading>
-				<Stack spacing={4}>
-					<Stack direction={["column", "row"]} spacing={4} align="center">
-						<Text minW={125} fontSize="xl">
+
+				<Alert status="info" borderRadius={"lg"}>
+					<AlertIcon />
+					<Text fontSize={{ base: "sm", md: "md" }}>
+						Enter in a course title, or what you want to learn about. Then enter
+						a list of units, which are the specifics you want to learn. Hit
+						"Let's Go" and our AI will generate a course for you!
+					</Text>
+				</Alert>
+
+				<Stack spacing={{ base: 2, md: 4 }}>
+					<Stack
+						direction={["column", "row"]}
+						align={{ base: "start", md: "center" }}
+						justify={"space-between"}
+						spacing={{ base: 1, md: 0 }}
+					>
+						<Text fontWeight={"bold"} fontSize={{ base: "lg", md: "xl" }}>
 							Title:
 						</Text>
 						<Input
+							maxW="sm"
 							disabled={navigation.state === "submitting"}
 							name="title"
 							isRequired
@@ -67,7 +82,7 @@ export default function Home() {
 							value={title}
 						/>
 					</Stack>
-					{units.map((unit, index) => (
+					{units.map((u, index) => (
 						<Unit
 							key={index}
 							index={index}

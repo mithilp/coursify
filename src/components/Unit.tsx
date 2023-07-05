@@ -11,11 +11,17 @@ export default function Unit({ index, onChange, disabled }: UnitProps) {
 	const [value, setValue] = useState("");
 
 	return (
-		<Stack direction={["column", "row"]} align="center" spacing={4}>
-			<Text minW={125} fontSize="xl">
+		<Stack
+			direction={["column", "row"]}
+			align={{ base: "start", md: "center" }}
+			justify={"space-between"}
+			spacing={{ base: 1, md: 0 }}
+		>
+			<Text fontSize={{ base: "lg", md: "xl" }} fontWeight={"bold"}>
 				Unit {index + 1}:
 			</Text>
 			<Input
+				maxW="sm"
 				disabled={disabled}
 				isRequired
 				name={"unit"}

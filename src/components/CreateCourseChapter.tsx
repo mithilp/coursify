@@ -1,7 +1,7 @@
 import { Icon, Spacer, Spinner, Stack, Text } from "@chakra-ui/react";
 import { useFetcher } from "@remix-run/react";
 import { forwardRef, useEffect, useImperativeHandle } from "react";
-import { FaCheck, FaExclamation } from "react-icons/fa";
+import { FaCheck, FaExclamation } from "react-icons/fa6";
 
 type ChapterProps = {
 	chapterNumber: number;

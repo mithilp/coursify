@@ -16,14 +16,21 @@ import {
 	StepTitle,
 	Stepper,
 	useSteps,
+	IconButton,
+	Icon,
 } from "@chakra-ui/react";
 import type { ActionArgs, LoaderArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
-import { addDoc, doc, updateDoc } from "firebase/firestore";
-import { createRef, useCallback, useEffect, useRef, useState } from "react";
-import { FaCheck, FaChevronRight, FaEnvelope } from "react-icons/fa";
-import { FaChevronLeft } from "react-icons/fa6";
+import { doc, updateDoc } from "firebase/firestore";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	FaCheck,
+	FaChevronRight,
+	FaEnvelope,
+	FaChevronLeft,
+	FaBars,
+} from "react-icons/fa6";
 import CreateCourseChapter from "src/components/CreateCourseChapter";
 import { db } from "src/utils/firebase";
 import {
@@ -241,7 +248,7 @@ export default function FinishCourse() {
 	};
 
 	return (
-		<Stack margin="auto" w="xl" p={8} h="calc(100vh - 90px)" spacing={4}>
+		<Stack margin="auto" maxW="xl" p={8} h="calc(100vh - 90px)" spacing={4}>
 			<Stepper size="sm" index={activeStep}>
 				{steps.map((step, index) => (
 					<Step key={index}>
@@ -254,7 +261,7 @@ export default function FinishCourse() {
 								/>
 							</StepIndicator>
 
-							<Box flexShrink="0">
+							<Box textAlign={"center"} flexShrink="0">
 								<StepTitle>{step.description}</StepTitle>
 							</Box>
 						</Stack>
@@ -282,8 +289,11 @@ export default function FinishCourse() {
 			<Box>
 				<Alert status="info" borderRadius={"lg"}>
 					<AlertIcon />
-					We generated chapters for each of your units. Look over them and then
-					click the "Finish Course Generation" button to confirm and continue.
+					<Text fontSize={{ base: "sm", md: "md" }}>
+						We generated chapters for each of your units. Look over them and
+						then click the "Finish Course Generation" button to confirm and
+						continue.
+					</Text>
 				</Alert>
 			</Box>
 
@@ -336,10 +346,12 @@ export default function FinishCourse() {
 				</Stack>
 			))}
 			{isErrored && (
-				<Alert status="error" py={12} borderRadius={"lg"}>
+				<Alert status="error" borderRadius={"lg"}>
 					<AlertIcon />
-					An error occurred while creating one of your chapters. Click the
-					"Contact Us" button to report the issue.
+					<Text fontSize={{ base: "sm", md: "md" }}>
+						An error occurred while creating one of your chapters. Click the
+						"Contact Us" button to report the issue.
+					</Text>
 				</Alert>
 			)}
 
@@ -373,15 +385,11 @@ export default function FinishCourse() {
 								? saveAndFinish
 								: generateChapterInfos
 						}
-						colorScheme={allDone ? "green" : "blue"}
+						colorScheme={isErrored ? "red" : allDone ? "green" : "blue"}
 						isLoading={isLoading.length > 0}
-						loadingText={allDone ? "Saving" : "Generating Chapter Info"}
+						loadingText={allDone ? "Saving" : "Generating"}
 					>
-						{isErrored
-							? "Contact Us"
-							: allDone
-							? "Save & Finish"
-							: "Generate Chapter Info"}
+						{isErrored ? "Contact Us" : allDone ? "Save & Finish" : "Generate"}
 					</Button>
 				</Box>
 				<Divider orientation="horizontal" />

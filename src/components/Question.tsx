@@ -1,4 +1,11 @@
-import { Box, Radio, RadioGroup, Stack, Text } from "@chakra-ui/react";
+import {
+	Box,
+	Radio,
+	RadioGroup,
+	Stack,
+	StackDivider,
+	Text,
+} from "@chakra-ui/react";
 import { useState } from "react";
 
 type QuestionProps = {
@@ -12,11 +19,11 @@ export default function Question({ question }: QuestionProps) {
 			<Stack>
 				<Text fontWeight={"bold"}>{question.question}</Text>
 				<RadioGroup onChange={setValue} value={value}>
-					<Stack spacing={0}>
+					<Stack spacing={1} divider={<StackDivider />}>
 						{question.answers
 							? question.answers.map((answer: any, i: number) => (
 									<Radio
-										size="md"
+										size="sm"
 										name={`question${i}`}
 										key={i}
 										colorScheme="blue"
@@ -26,7 +33,7 @@ export default function Question({ question }: QuestionProps) {
 							  ))
 							: question.choices.map((choices: any, i: number) => (
 									<Radio
-										size="md"
+										size="sm"
 										name={`question${i}`}
 										key={i}
 										colorScheme="blue"
