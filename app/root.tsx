@@ -13,7 +13,7 @@ import {
 	AlertTitle,
 	AlertDescription,
 } from "@chakra-ui/react";
-import type { MetaFunction } from "@remix-run/node";
+import type { LinksFunction, MetaFunction } from "@remix-run/node";
 import {
 	Links,
 	LiveReload,
@@ -22,14 +22,21 @@ import {
 	Scripts,
 	ScrollRestoration,
 	useCatch,
+	useNavigation,
 } from "@remix-run/react";
 import theme from "../src/utils/theme";
-
 import { Link as RemixLink } from "@remix-run/react";
+import NProgress from "nprogress";
+import nProgressStyles from "nprogress/nprogress.css";
+import { useEffect } from "react";
 
 export const meta: MetaFunction = () => ({
 	charset: "utf-8",
 });
+
+export let links: LinksFunction = () => {
+	return [{ rel: "stylesheet", href: nProgressStyles }];
+};
 
 function Document({
 	children,
@@ -57,6 +64,16 @@ function Document({
 }
 
 export default function App() {
+	const transition = useNavigation();
+
+	useEffect(() => {
+		if (transition.state !== "idle") {
+			NProgress.start();
+		} else {
+			NProgress.done();
+		}
+	}, [transition.state]);
+
 	return (
 		<Document>
 			<ChakraProvider theme={theme}>
