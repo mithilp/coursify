@@ -3,6 +3,8 @@ import { json } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
 import { getCourse } from "~/models/course.server";
 import {
+	Alert,
+	AlertIcon,
 	AspectRatio,
 	Box,
 	Button,
@@ -18,6 +20,7 @@ import {
 import Question from "../../src/components/Question";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
 import CourseSidebar from "src/components/CourseSidebar";
+import { useState } from "react";
 
 export const loader = async ({ params }: LoaderArgs) => {
 	const data = await getCourse(params.courseId as string);
@@ -39,6 +42,49 @@ export default function PostSlug() {
 	const { params, data } = useLoaderData<typeof loader>();
 
 	const chapterInfo = data.units[params.unitId].chapters[params.chapterId];
+
+	const [answers, setAnswers] = useState(
+		Array.from(chapterInfo.quiz, () => "")
+	);
+
+	const [alert, setAlert] = useState("");
+
+	const [percentCorrect, setPercentCorrect] = useState(0);
+
+	const submitQuiz = () => {
+		const newAnswers = [...answers];
+		answers.forEach((answer, index) => {
+			newAnswers[index] =
+				chapterInfo.quiz[index].answer.toString() === answer ||
+				answer === "correct"
+					? "correct"
+					: "incorrect";
+		});
+		setAnswers(newAnswers);
+
+		const percentCorrect =
+			(Object.fromEntries([
+				...newAnswers.reduce(
+					(map, key) => map.set(key, (map.get(key) || 0) + 1),
+					new Map()
+				),
+			])["correct"]
+				? Object.fromEntries([
+						...newAnswers.reduce(
+							(map, key) => map.set(key, (map.get(key) || 0) + 1),
+							new Map()
+						),
+				  ])["correct"]
+				: 0) / newAnswers.length;
+
+		setPercentCorrect(percentCorrect);
+
+		setAlert(
+			`${percentCorrect > 0.8 ? "Woohoo! " : ""}You got ${(
+				percentCorrect * 100
+			).toFixed(2)}% correct${percentCorrect > 0.8 ? "!" : ". Try again!"}`
+		);
+	};
 
 	return (
 		<Stack direction={"row"} h="100%">
@@ -62,7 +108,7 @@ export default function PostSlug() {
 
 							<AspectRatio
 								overflow="clip"
-								borderRadius="3xl"
+								borderRadius="md"
 								w="100%"
 								maxH="sm"
 								ratio={16 / 9}
@@ -87,9 +133,32 @@ export default function PostSlug() {
 						<Stack w={{ base: "100%", md: "xl" }}>
 							<Heading size="lg">Knowledge Check</Heading>
 							{chapterInfo.quiz.map((question: any, index: number) => (
-								<Question question={question} key={index} />
+								<Question
+									correct={answers[index] === "correct"}
+									incorrect={answers[index] === "incorrect"}
+									question={question}
+									onChange={(newValue: string) => {
+										const newAnswers = [...answers];
+										newAnswers[index] = newValue;
+										setAnswers(newAnswers);
+									}}
+									key={index}
+								/>
 							))}
-							<Button>Submit</Button>
+							<Button onClick={submitQuiz}>Submit</Button>
+							{alert.length > 0 ? (
+								<Box>
+									<Alert
+										status={percentCorrect > 0.8 ? "success" : "error"}
+										borderRadius={"md"}
+									>
+										<AlertIcon />
+										<Text fontSize={{ base: "sm", md: "md" }}>{alert}</Text>
+									</Alert>
+								</Box>
+							) : (
+								""
+							)}
 						</Stack>
 					</Stack>
 					<Spacer />

@@ -10,15 +10,34 @@ import { useState } from "react";
 
 type QuestionProps = {
 	question: any;
+	onChange: Function;
+	correct: boolean;
+	incorrect: boolean;
 };
 
-export default function Question({ question }: QuestionProps) {
-	const [value, setValue] = useState("0");
+export default function Question({
+	question,
+	onChange,
+	correct,
+	incorrect,
+}: QuestionProps) {
+	const [value, setValue] = useState("");
+
 	return (
-		<Box bg="whiteAlpha.300" borderRadius={"3xl"} p={4}>
+		<Box
+			bg={correct ? "green.800" : incorrect ? "red.800" : "whiteAlpha.300"}
+			borderRadius={"md"}
+			p={4}
+		>
 			<Stack>
 				<Text fontWeight={"bold"}>{question.question}</Text>
-				<RadioGroup onChange={setValue} value={value}>
+				<RadioGroup
+					onChange={(e) => {
+						onChange(e);
+						setValue(e);
+					}}
+					value={value}
+				>
 					<Stack spacing={1} divider={<StackDivider />}>
 						{question.answers
 							? question.answers.map((answer: any, i: number) => (
@@ -27,6 +46,7 @@ export default function Question({ question }: QuestionProps) {
 										name={`question${i}`}
 										key={i}
 										colorScheme="blue"
+										value={`${i}`}
 									>
 										{answer.choice}
 									</Radio>
@@ -36,6 +56,7 @@ export default function Question({ question }: QuestionProps) {
 										size="sm"
 										name={`question${i}`}
 										key={i}
+										value={`${i}`}
 										colorScheme="blue"
 									>
 										{choices}
