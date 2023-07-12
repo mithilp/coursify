@@ -28,9 +28,10 @@ export async function getAllCourses() {
 		where("public", "==", true)
 	);
 	const coursesSnapshot = await getDocs(queryRef);
-	const coursesData = await coursesSnapshot.docs.map((doc) => doc.data());
-	const coursesId = await coursesSnapshot.docs.map((doc) => doc.id);
-	return { coursesId, coursesData };
+	const coursesData = await coursesSnapshot.docs.map((doc) => {
+		return { data: doc.data(), id: doc.id };
+	});
+	return coursesData;
 }
 
 export async function getCourse(id: string): Promise<any> {

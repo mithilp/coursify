@@ -16,40 +16,47 @@ import { useLoaderData } from "@remix-run/react";
 import { Form } from "@remix-run/react";
 import GalleryResult from "src/components/GalleryResult";
 import { FaSearch } from "react-icons/fa";
+import { useState } from "react";
+import Fuse from "fuse.js";
 
 export const loader = async (query: string) => {
 	return await getAllCourses();
 };
 
 export default function PostSlug() {
-	const { coursesId, coursesData } = useLoaderData<typeof loader>();
+	const coursesData = useLoaderData<typeof loader>();
 
-	function handleSubmit() {
-		console.log("helloo");
-		return true;
+	const fuse = new Fuse(coursesData, {
+		keys: ["id", "data.title", "data.units.title"],
+		threshold: 0.4,
+	});
+
+	const [data, setData] = useState(coursesData);
+
+	function handleChange(e: any) {
+		if (e.target.value == "") {
+			setData(coursesData);
+		} else {
+			setData(fuse.search(e.target.value));
+		}
 	}
 
 	return (
 		<Stack spacing={8} py={8} px={4}>
-			<Form onSubmit={handleSubmit}>
-				<HStack spacing={2} px={4}>
-					<InputGroup size="lg">
-						<InputLeftElement>
-							<Icon as={FaSearch} />
-						</InputLeftElement>
-						<Input
-							pr="6rem"
-							type="text"
-							placeholder="Search by keyword, title, or units"
-						/>
-						<InputRightElement width="6rem">
-							<Button mr={1} h="2rem" size="md" type="submit">
-								Search
-							</Button>
-						</InputRightElement>
-					</InputGroup>
-				</HStack>
-			</Form>
+			<HStack spacing={2} px={4}>
+				<InputGroup size="lg">
+					<InputLeftElement>
+						<Icon as={FaSearch} />
+					</InputLeftElement>
+					<Input
+						onChange={handleChange}
+						name="search"
+						pr="6rem"
+						type="text"
+						placeholder="Search by keyword, title, or units"
+					/>
+				</InputGroup>
+			</HStack>
 			<Divider
 				borderColor="white.400"
 				borderWidth={"1px"}
@@ -58,10 +65,10 @@ export default function PostSlug() {
 				alignSelf="center"
 			/>
 			<Wrap spacing={4} justify={"center"}>
-				{coursesId.map((courseId: any, index: number) => (
+				{data.map((course: any, index: number) => (
 					<GalleryResult
-						courseView={coursesData[index]}
-						courseId={courseId}
+						courseView={course.data ? course.data : course.item.data}
+						courseId={course.id ? course.id : course.item.id}
 						key={index}
 					/>
 				))}
