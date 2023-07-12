@@ -50,6 +50,11 @@ function Document({
 			<head>
 				<Meta />
 				<meta name="viewport" content="width=device-width,initial-scale=1" />
+				<script
+					async
+					src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6458965765037147"
+					crossOrigin="anonymous"
+				></script>
 				<title>{title}</title>
 				<Links />
 			</head>
