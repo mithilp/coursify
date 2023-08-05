@@ -88,16 +88,13 @@ export async function promptPalm(prompt: string) {
 
 export async function searchYouTube(searchQuery: string) {
 	const response = await fetch(
-		`https://www.googleapis.com/youtube/v3/search?key=${process.env.YOUTUBE_API}&q=${searchQuery}&videoDuration=medium&videoEmbeddable=true&type=video&part=snippet&maxResults=1`,
+		`https://aiotube.deta.dev/search/video/${searchQuery}`,
 		{
 			method: "GET",
 		}
 	);
 	const json = await response.json();
-	if (json.items[0] == undefined) {
-		console.log("search yt");
-	}
-	return json.items[0].id.videoId;
+	return json.id;
 }
 
 export async function getTranscript(videoId: string) {
