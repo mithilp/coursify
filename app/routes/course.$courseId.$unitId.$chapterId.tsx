@@ -101,7 +101,8 @@ export default function PostSlug() {
 									fontSize="xs"
 									textTransform="uppercase"
 								>
-									Unit {params.unitId + 1} &bull; Chapter {params.chapterId + 1}
+									Unit {+params.unitId + 1} &bull; Chapter{" "}
+									{+params.chapterId + 1}
 								</Box>
 								<Heading> {chapterInfo.title}</Heading>
 							</Stack>
