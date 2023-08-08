@@ -16,6 +16,7 @@ import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState } from "react";
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { ActionArgs, json, redirect } from "@remix-run/node";
+import splitbee from "@splitbee/web";
 import { createChapters } from "~/models/course.server";
 
 export async function action({ request }: ActionArgs) {
@@ -134,6 +135,7 @@ export default function Home() {
 
 				<Stack spacing={4}>
 					<Button
+						data-splitbee-event="Click Create Course"
 						colorScheme="blue"
 						isLoading={navigation.state === "submitting"}
 						loadingText={"Creating Your Course..."}

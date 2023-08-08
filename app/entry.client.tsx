@@ -3,9 +3,12 @@ import { CacheProvider } from "@emotion/react";
 import { RemixBrowser } from "@remix-run/react";
 import { startTransition, StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
+import splitbee from "@splitbee/web";
 
 const hydrate = () => {
 	const emotionCache = createEmotionCache({ key: "css" });
+
+	splitbee.init();
 
 	startTransition(() => {
 		hydrateRoot(
