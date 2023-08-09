@@ -49,9 +49,9 @@ export default function Home() {
 	return (
 		<Form
 			onSubmit={() => {
-				console.log(1);
-				mixpanel.track("Submit Create Course Form");
-				console.log(2);
+				mixpanel.track("Submit Create Course Form", {
+					title: title,
+				});
 			}}
 			method="post"
 			action="/?index"

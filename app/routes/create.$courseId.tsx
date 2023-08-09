@@ -221,7 +221,9 @@ export default function FinishCourse() {
 	const fetcher = useFetcher();
 
 	const saveAndFinish = () => {
-		mixpanel.track("Save Course");
+		mixpanel.track("Save Course", {
+			title: data.title,
+		});
 		const newLoading = isLoading;
 		newLoading.push("submitting");
 		setIsLoading(newLoading);
