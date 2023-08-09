@@ -22,8 +22,8 @@ import {
 import type { ActionArgs, LoaderArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
-import splitbee from "@splitbee/web";
 import { doc, updateDoc } from "firebase/firestore";
+import mixpanel from "mixpanel-browser";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	FaCheck,
@@ -221,7 +221,7 @@ export default function FinishCourse() {
 	const fetcher = useFetcher();
 
 	const saveAndFinish = () => {
-		splitbee.track("Save Course");
+		mixpanel.track("Save Course");
 		const newLoading = isLoading;
 		newLoading.push("submitting");
 		setIsLoading(newLoading);

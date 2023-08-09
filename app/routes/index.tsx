@@ -16,8 +16,8 @@ import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState } from "react";
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { ActionArgs, json, redirect } from "@remix-run/node";
-import splitbee from "@splitbee/web";
 import { createChapters } from "~/models/course.server";
+import mixpanel from "mixpanel-browser";
 
 export async function action({ request }: ActionArgs) {
 	try {
@@ -47,7 +47,15 @@ export default function Home() {
 	const actionData = useActionData<typeof action>();
 
 	return (
-		<Form method="post" action="/?index">
+		<Form
+			onSubmit={() => {
+				console.log(1);
+				mixpanel.track("Submit Create Course Form");
+				console.log(2);
+			}}
+			method="post"
+			action="/?index"
+		>
 			<Stack maxW="xl" justify="center" margin={"auto"} p={8} spacing={4}>
 				<Heading
 					as="h1"
@@ -135,7 +143,6 @@ export default function Home() {
 
 				<Stack spacing={4}>
 					<Button
-						data-splitbee-event="Click Create Course"
 						colorScheme="blue"
 						isLoading={navigation.state === "submitting"}
 						loadingText={"Creating Your Course..."}

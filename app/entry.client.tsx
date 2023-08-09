@@ -3,12 +3,16 @@ import { CacheProvider } from "@emotion/react";
 import { RemixBrowser } from "@remix-run/react";
 import { startTransition, StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
-import splitbee from "@splitbee/web";
+import mixpanel from "mixpanel-browser";
 
 const hydrate = () => {
 	const emotionCache = createEmotionCache({ key: "css" });
 
-	splitbee.init();
+	mixpanel.init("a5eea8bd8876042048d9da892b2242f9", {
+		track_pageview: true,
+		persistence: "localStorage",
+		ignore_dnt: true,
+	});
 
 	startTransition(() => {
 		hydrateRoot(
