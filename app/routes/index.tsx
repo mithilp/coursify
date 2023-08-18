@@ -26,7 +26,6 @@ export async function action({ request }: ActionArgs) {
 			formData.get("title") as string,
 			formData.getAll("unit") as string[]
 		);
-		console.log(response);
 		return redirect(`/create/${response.courseId}/`);
 	} catch (error: unknown) {
 		console.error(error);
@@ -60,10 +59,10 @@ export default function Home() {
 				<Heading
 					as="h1"
 					fontWeight={"black"}
-					size={{ base: "3xl", md: "4xl" }}
+					size={{ base: "xl", md: "2xl" }}
 					textAlign={"center"}
 				>
-					Coursify
+					Create a Course
 				</Heading>
 
 				<Alert status="info" borderRadius={"lg"}>

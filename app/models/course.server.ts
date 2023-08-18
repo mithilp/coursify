@@ -107,16 +107,9 @@ export async function getTranscript(videoId: string) {
 		for (let i = 0; i < transcript_arr.length; i++) {
 			transcript += transcript_arr[i].text + " ";
 		}
-		return transcript.replaceAll("\n", " ");
+		return { transcript: transcript.replaceAll("\n", " "), success: true };
 	} catch (e) {
-		const response = await fetch(
-			`https://www.googleapis.com/youtube/v3/search?key=${process.env.YOUTUBE_API}&id=${videoId}&videoDuration=medium&videoEmbeddable=true&type=video&part=snippet&maxResults=1`,
-			{
-				method: "GET",
-			}
-		);
-		const json = await response.json();
-		return json.items[0].snippet.title;
+		return { transcript: "error", success: false };
 	}
 }
 
