@@ -378,7 +378,7 @@ export default function FinishCourse() {
 				</Stack>
 			))}
 			{isErrored && (
-				<Alert status="error" borderRadius={"lg"}>
+				<Alert minH={100} status="error" borderRadius={"lg"}>
 					<AlertIcon />
 					<Text fontSize={{ base: "sm", md: "md" }}>
 						An error occurred while creating one of your chapters. Click the
