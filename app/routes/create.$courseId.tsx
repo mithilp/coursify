@@ -75,7 +75,12 @@ export const action = async ({ request }: ActionArgs) => {
 			let youtube_search_query = formData.get("youtube_search_query") as string;
 			const videoId = await searchYouTube(youtube_search_query);
 			const transcript = await getTranscript(videoId);
-			const summaryPrompt = `summarize in 250 words or less and don't talk of the sponsors or anything unrelated to the main topic. also do not introduce what the summary is about:\n${transcript}`;
+			let summaryPrompt;
+			if (transcript.success) {
+				summaryPrompt = `summarize in 250 words or less and don't talk of the sponsors or anything unrelated to the main topic. also do not introduce what the summary is about:\n${transcript}`;
+			} else {
+				summaryPrompt = `summarize the topic ${chapter_title} in 250 words or less`;
+			}
 			let summary;
 			let gotSummary = false;
 			let triedSummary = 0;
@@ -95,8 +100,11 @@ export const action = async ({ request }: ActionArgs) => {
 					throw new Error("tried getting summary too many times");
 				}
 			}
+			console.log("summary:", summary);
 
-			let quizPrompt = `${transcript}\n
+			let quizPrompt;
+			if (transcript.success) {
+				quizPrompt = `${transcript}\n
 			Generate at least a 3 question educational informative quiz on the text given above. The questions should be on the material of the entire transcript as a whole. The question should be knowledgeable and not about the specifics. The question should relate to ${chapter_title}. The output has to be an array of questions. Each question should have a question, which is a string question, the choices, which is 4 possible answer choices represented in an array, and the answer, which is the index of the answer in the choices array.
 
 			Here is an example answer:
@@ -112,6 +120,24 @@ export const action = async ({ request }: ActionArgs) => {
 				"answer": 0
 			}
 			]`;
+			} else {
+				quizPrompt = `${transcript}\n
+			Generate at least a 3 question educational informative quiz on the topic ${chapter_title}. The question should be knowledgeable and general, and not about the specifics. The questions should all relate to ${chapter_title}. The output has to be an array of questions. Each question should have a question, which is a string question, the choices, which is 4 possible answer choices represented in an array, and the answer, which is the index of the answer in the choices array.
+
+			Here is an example answer:
+			[
+			{
+				"question": "What is (sqrt(16)+5-4)/1/24",
+				"choices": ["100", "120", "40", "12"],
+				"answer": 1
+			},
+			{
+				"question": "What is a forrier trnasformation?",
+				"choices": ["a transform that converts a function into a form that describes the frequencies present in the original function", "infinite sum of terms that approximate a function as a polynomial", "mathematical function that can be formally defined as an improper Riemann integral", "certain kind of approximation of an integral by a finite sum"],
+				"answer": 0
+			}
+			]`;
+			}
 			let quizJSON;
 			let gotQuiz = false;
 			let triedQuiz = 0;
@@ -148,6 +174,8 @@ export const action = async ({ request }: ActionArgs) => {
 					throw new Error("tried getting quiz too many times");
 				}
 			}
+			console.log("quiz:", quizJSON);
+
 			return {
 				success: true,
 				chapterInfo: {
@@ -350,7 +378,7 @@ export default function FinishCourse() {
 				</Stack>
 			))}
 			{isErrored && (
-				<Alert status="error" borderRadius={"lg"}>
+				<Alert minH={100} status="error" borderRadius={"lg"}>
 					<AlertIcon />
 					<Text fontSize={{ base: "sm", md: "md" }}>
 						An error occurred while creating one of your chapters. Click the

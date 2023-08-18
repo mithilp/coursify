@@ -53,12 +53,6 @@ export default function Home() {
 	const navigation = useNavigation();
 	const actionData = useActionData<any>();
 
-	useEffect(() => {
-		if (actionData) {
-			console.log(actionData);
-		}
-	}, []);
-
 	return (
 		<Form method="post">
 			<Stack maxW="xl" justify="center" margin={"auto"} p={8} spacing={4}>
