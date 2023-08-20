@@ -8,7 +8,9 @@ import {
 	getDocs,
 	query,
 	where,
+	setDoc
 } from "@firebase/firestore";
+import { m } from "framer-motion";
 
 export type Course = {
 	title: string;
@@ -35,7 +37,6 @@ export async function getAllCourses() {
 }
 
 export async function getCourse(id: string): Promise<any> {
-	console.log("get course id", id);
 	let data: Course = {
 		title: "",
 		units: [],
@@ -81,7 +82,13 @@ export async function promptPalm(prompt: string) {
 			}),
 		}
 	);
-	console.log("PaLM api status: ", response.status);
+	// let messages: any[] = [];
+	// let chat: any[] = [];
+	// [ chat, messages ] = await chatBot("how are you", '', chat, messages);
+	// [ chat, messages ] = await chatBot("what is 1+1", '', chat, messages);
+	// console.log("printing");
+	// console.log(chat);
+	// console.log("PaLM api status: ", response.status);
 	const json = await response.json();
 	return json.candidates[0].output;
 }
@@ -194,4 +201,85 @@ export async function createChapters(title: string, unitsArray: string[]) {
 			message: error as string,
 		};
 	}
+}
+
+export async function queryChat(prompt: string, context: string, examples: any[], messages: any[]) {
+	messages.push(
+		{
+			content: prompt
+		}
+	);
+	const response = await fetch(
+		`https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage?key=${process.env.PALM_API}`,
+		{
+			method: "POST",
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				
+				prompt: {
+					context: context,
+					messages: messages,
+					examples: examples,
+				},
+				temperature: 0.25,
+				top_k: 40,
+				top_p: 0.95,
+				candidate_count: 1
+			})
+		},
+
+	)
+	
+	const json = await response.json();
+	examples.push(
+		{
+			input: {
+				content: prompt,
+			},
+			output: {
+				content: json.candidates[0].content,
+			}
+		}
+	);
+	
+	return [
+		examples,
+		messages
+	]
+}
+
+export async function chatBot(prompt: string, context: string, id: string) {
+	const document = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"));
+	let data: any;
+
+	if (document.exists()) {
+		data = document.data();
+		console.log(data);
+	} else {
+		data = {
+			courseId: "",
+			examples: [],
+			messages: []
+		};
+	}
+	let examples = data.examples;
+	let messages = data.messages;
+	let courseId = data.courseId;
+
+	if (id != data.courseId) {
+		courseId = id;
+		examples = [];
+		messages = [];
+	}
+	
+	[examples, messages] = await queryChat(prompt, context, examples, messages)
+
+	const docRef = await setDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"), {
+			courseId: courseId,
+			examples: examples,
+			messages: messages,
+	});
+	return examples;
 }

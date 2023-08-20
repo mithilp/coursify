@@ -70,7 +70,7 @@ function Document({
 
 export default function App() {
 	const transition = useNavigation();
-
+	
 	useEffect(() => {
 		if (transition.state !== "idle") {
 			NProgress.start();

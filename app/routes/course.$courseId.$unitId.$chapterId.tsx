@@ -1,6 +1,6 @@
 import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, Link, Form } from "@remix-run/react";
 import { getCourse } from "~/models/course.server";
 import {
 	Alert,
@@ -16,11 +16,26 @@ import {
 	Spacer,
 	Stack,
 	Text,
+	HStack,
+	Textarea,
+	Avatar,
+	Input
 } from "@chakra-ui/react";
 import Question from "../../src/components/Question";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
 import CourseSidebar from "src/components/CourseSidebar";
 import { useState } from "react";
+// import { chat } from "../globalChatVariable";
+import { chatBot } from "../models/course.server";
+import type { ActionArgs } from "@remix-run/node"; // or cloudflare/deno
+import { db } from "../../src/utils/firebase";
+import {
+	getDoc,
+	doc,
+	collection,
+	getDocs,
+	setDoc
+} from "@firebase/firestore";
 
 export const loader = async ({ params }: LoaderArgs) => {
 	const data = await getCourse(params.courseId as string);
@@ -31,61 +46,35 @@ export const loader = async ({ params }: LoaderArgs) => {
 			statusText: "Not Found",
 		});
 	} else {
+		const chat = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"))
+		
 		return json({
 			params: params,
 			data: await getCourse(params.courseId as string),
+			chat: chat.data()
 		});
 	}
 };
 
+export async function action({ request }: ActionArgs) {
+	const formData = await request.formData();
+	const formObject = Object.fromEntries(formData)
+	let prompt = formObject.message.toString();
+	let courseId = formObject.courseId.toString();
+	let transcript = formObject.transcript.toString();
+	console.log("courseID", courseId);
+	await chatBot(prompt, transcript, courseId);
+
+	let chat_examples = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"));
+
+	return true;
+}
+
 export default function PostSlug() {
-	const { params, data } = useLoaderData<typeof loader>();
-
+	const { params, data, chat } = useLoaderData<typeof loader>();
+	
 	const chapterInfo = data.units[params.unitId].chapters[params.chapterId];
-
-	const [answers, setAnswers] = useState(
-		Array.from(chapterInfo.quiz, () => "")
-	);
-
-	const [alert, setAlert] = useState("");
-
-	const [percentCorrect, setPercentCorrect] = useState(0);
-
-	const submitQuiz = () => {
-		const newAnswers = [...answers];
-		answers.forEach((answer, index) => {
-			newAnswers[index] =
-				chapterInfo.quiz[index].answer.toString() === answer ||
-				answer === "correct"
-					? "correct"
-					: "incorrect";
-		});
-		setAnswers(newAnswers);
-
-		const percentCorrect =
-			(Object.fromEntries([
-				...newAnswers.reduce(
-					(map, key) => map.set(key, (map.get(key) || 0) + 1),
-					new Map()
-				),
-			])["correct"]
-				? Object.fromEntries([
-						...newAnswers.reduce(
-							(map, key) => map.set(key, (map.get(key) || 0) + 1),
-							new Map()
-						),
-				  ])["correct"]
-				: 0) / newAnswers.length;
-
-		setPercentCorrect(percentCorrect);
-
-		setAlert(
-			`${percentCorrect > 0.8 ? "Woohoo! " : ""}You got ${(
-				percentCorrect * 100
-			).toFixed(2)}% correct${percentCorrect > 0.8 ? "!" : ". Try again!"}`
-		);
-	};
-
+	const [check, setCheck] = useState(false);
 	return (
 		<Stack direction={"row"} h="100%">
 			<CourseSidebar data={data} params={params} />
@@ -132,34 +121,23 @@ export default function PostSlug() {
 						</Stack>
 
 						<Stack w={{ base: "100%", md: "xl" }}>
-							<Heading size="lg">Knowledge Check</Heading>
-							{chapterInfo.quiz.map((question: any, index: number) => (
-								<Question
-									correct={answers[index] === "correct"}
-									incorrect={answers[index] === "incorrect"}
-									question={question}
-									onChange={(newValue: string) => {
-										const newAnswers = [...answers];
-										newAnswers[index] = newValue;
-										setAnswers(newAnswers);
-									}}
-									key={index}
-								/>
-							))}
-							<Button onClick={submitQuiz}>Submit</Button>
-							{alert.length > 0 ? (
-								<Box>
-									<Alert
-										status={percentCorrect > 0.8 ? "success" : "error"}
-										borderRadius={"md"}
-									>
-										<AlertIcon />
-										<Text fontSize={{ base: "sm", md: "md" }}>{alert}</Text>
-									</Alert>
-								</Box>
-							) : (
-								""
-							)}
+							
+							
+							<HStack>
+								<Button size="md" onClick={() => { setCheck(true) }}>
+									Knowledge Check
+								</Button>
+								<Spacer/>
+								<Button size="md" onClick={() => { setCheck(false) }}>
+									ChatBot
+								</Button>
+							</HStack>
+							{check && <KnowledgeCheck chapterInfo={chapterInfo} />}
+							{!check && <ChatBox data={{
+								id: params.courseId,
+								transcript: chapterInfo.summary,
+								chat: chat
+							}} />}
 						</Stack>
 					</Stack>
 					<Spacer />
@@ -268,4 +246,136 @@ export default function PostSlug() {
 			</Box>
 		</Stack>
 	);
+}
+
+function KnowledgeCheck(chapterInfo: any) {
+	chapterInfo = chapterInfo.chapterInfo;
+
+	const [answers, setAnswers] = useState(
+		Array.from(chapterInfo.quiz, () => "")
+	);
+
+	const [alert, setAlert] = useState("");
+
+	const [percentCorrect, setPercentCorrect] = useState(0);
+
+	const submitQuiz = () => {
+		const newAnswers = [...answers];
+		answers.forEach((answer, index) => {
+			newAnswers[index] =
+				chapterInfo.quiz[index].answer.toString() === answer ||
+				answer === "correct"
+					? "correct"
+					: "incorrect";
+		});
+		setAnswers(newAnswers);
+
+		const percentCorrect =
+			(Object.fromEntries([
+				...newAnswers.reduce(
+					(map, key) => map.set(key, (map.get(key) || 0) + 1),
+					new Map()
+				),
+			])["correct"]
+				? Object.fromEntries([
+						...newAnswers.reduce(
+							(map, key) => map.set(key, (map.get(key) || 0) + 1),
+							new Map()
+						),
+				  ])["correct"]
+				: 0) / newAnswers.length;
+
+		setPercentCorrect(percentCorrect);
+
+		setAlert(
+			`${percentCorrect > 0.8 ? "Woohoo! " : ""}You got ${(
+				percentCorrect * 100
+			).toFixed(2)}% correct${percentCorrect > 0.8 ? "!" : ". Try again!"}`
+		);
+	};
+
+	return <Stack>
+		{chapterInfo.quiz.map((question: any, index: number) => (
+			<Question
+				correct={answers[index] === "correct"}
+				incorrect={answers[index] === "incorrect"}
+				question={question}
+				onChange={(newValue: string) => {
+					const newAnswers = [...answers];
+					newAnswers[index] = newValue;
+					setAnswers(newAnswers);
+				}}
+				key={index}
+			/>
+		))}
+		<Button onClick={submitQuiz}>Submit</Button>
+		{alert.length > 0 ? (
+			<Box>
+				<Alert
+					status={percentCorrect > 0.8 ? "success" : "error"}
+					borderRadius={"md"}
+				>
+					<AlertIcon />
+					<Text fontSize={{ base: "sm", md: "md" }}>{alert}</Text>
+				</Alert>
+			</Box>
+		) : (
+			""
+		)}
+	</Stack>
+}
+
+function ChatBox(data: any) {
+	let courseId = (data.data.id);
+	let transcript = data.data.transcript;
+	let chat = (data.data.chat);
+	if (!chat.examples || courseId != chat.courseId) {
+		chat.examples = []
+	}
+	let [value, setValue] = useState('');
+	console.log("ENTEREDDDD");
+
+	return <Stack w="100%" h={"100%"}>
+		<Box height={"500px"} overflow={"hidden"} overflowY={"scroll"}>
+			{(chat.examples).map((example: any) => (
+				<Stack w="100%" h="100%">
+					<HStack>
+						<Spacer />
+						<Box width={"280px"} backgroundColor={"blue.800"} borderRadius={"8px"} >
+							<Text wordBreak={"break-word"} padding={"8px"} overflowY={"hidden"}>{example.input.content}</Text>
+						</Box>
+						<Stack>
+							<Spacer/>
+							<Avatar name="user" size="xs" src="https://media.istockphoto.com/id/1300845620/vector/user-icon-flat-isolated-on-white-background-user-symbol-vector-illustration.jpg?s=612x612&w=0&k=20&c=yBeyba0hUkh14_jgv1OKqIH0CCSWU_4ckRkAoy2p73o="></Avatar>
+						</Stack>
+					</HStack>
+					<HStack>
+						
+							<Avatar name="user" size="xs" src="https://media.istockphoto.com/id/1300845620/vector/user-icon-flat-isolated-on-white-background-user-symbol-vector-illustration.jpg?s=612x612&w=0&k=20&c=yBeyba0hUkh14_jgv1OKqIH0CCSWU_4ckRkAoy2p73o="></Avatar>
+						
+						<Stack>
+							
+							<Box width={"280px"} backgroundColor={"blue.800"} borderRadius={"8px"} >
+								<Text wordBreak={"break-word"} padding={"8px"} overflowY={"hidden"}>{example.output.content}</Text>
+								<Spacer/>
+							</Box>
+						</Stack>
+					</HStack>
+				</Stack>
+			))}
+		</Box>
+		<Spacer />
+		<Form method="post">
+			<Input type="hidden" value={courseId} name="courseId" />
+			<Input type="hidden" value={transcript} name="transcript" />
+			<Textarea placeholder="Send Message" value={value} onChange={(e) => setValue(e.currentTarget.value)} name="message" onKeyDown={(e) => {
+				if (e.code == "Enter") {
+					e.preventDefault();
+					setValue('');
+					document.forms[0].submit();
+				}
+			}}/>
+			<Box height={"2px"}/>
+		</Form>
+	</Stack>;
 }
