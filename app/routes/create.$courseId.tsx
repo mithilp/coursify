@@ -69,7 +69,7 @@ export const action = async ({ request }: ActionArgs) => {
 			const imageResponse = await imageResponseRaw.json();
 			courseInfo.image = imageResponse.results[0].urls.small_s3;
 			await updateDoc(doc(db, "courses", courseId), courseInfo);
-			return redirect(`/course/${courseId}/0/0`);
+			return redirect(`/create/${courseId}/save`);
 		} else {
 			let chapter_title = formData.get("chapter_title") as string;
 			let youtube_search_query = formData.get("youtube_search_query") as string;
@@ -232,7 +232,7 @@ export default function FinishCourse() {
 
 	const steps = [
 		{ title: "First", description: "Enter Units" },
-		{ title: "Second", description: "Confirm Chapters" },
+		{ title: "Second", description: "Generate Chapters" },
 		{ title: "Third", description: "Save & Finish" },
 	];
 
@@ -244,21 +244,19 @@ export default function FinishCourse() {
 	const onComplete = () => {
 		setAllDone(true);
 		setActiveStep(2);
+		saveAndFinish();
 	};
 
 	const fetcher = useFetcher();
 
 	const saveAndFinish = () => {
-		mixpanel.track("Save Course", {
-			title: data.title,
-		});
 		const newLoading = isLoading;
 		newLoading.push("submitting");
 		setIsLoading(newLoading);
 		const formattedData = {
 			title: data.title,
-			public: true,
-			completed: true,
+			public: false,
+			completed: false,
 			units: [
 				...data.units.map((unit: any, i: number) => {
 					return {
@@ -315,7 +313,7 @@ export default function FinishCourse() {
 				>
 					Course Name:
 				</Text>
-				<Heading size="xl">{data.title}</Heading>D
+				<Heading size="xl">{data.title}</Heading>
 			</Stack>
 
 			<Box>
@@ -411,17 +409,13 @@ export default function FinishCourse() {
 							)
 						}
 						onClick={
-							isErrored
-								? () => navigate("/contact")
-								: allDone
-								? saveAndFinish
-								: generateChapterInfos
+							isErrored ? () => navigate("/contact") : generateChapterInfos
 						}
-						colorScheme={isErrored ? "red" : allDone ? "green" : "blue"}
+						colorScheme={isErrored ? "red" : "blue"}
 						isLoading={isLoading.length > 0}
-						loadingText={allDone ? "Saving" : "Generating"}
+						loadingText={"Generating"}
 					>
-						{isErrored ? "Contact Us" : allDone ? "Save & Finish" : "Generate"}
+						{isErrored ? "Contact Us" : "Generate"}
 					</Button>
 				</Box>
 				<Divider orientation="horizontal" />

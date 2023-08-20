@@ -1,5 +1,5 @@
 import type { LoaderArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { useLoaderData, Link, Form } from "@remix-run/react";
 import { getCourse } from "~/models/course.server";
 import {
@@ -19,7 +19,7 @@ import {
 	HStack,
 	Textarea,
 	Avatar,
-	Input
+	Input,
 } from "@chakra-ui/react";
 import Question from "../../src/components/Question";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
@@ -29,36 +29,50 @@ import { useState } from "react";
 import { chatBot } from "../models/course.server";
 import type { ActionArgs } from "@remix-run/node"; // or cloudflare/deno
 import { db } from "../../src/utils/firebase";
-import {
-	getDoc,
-	doc,
-	collection,
-	getDocs,
-	setDoc
-} from "@firebase/firestore";
+import { getDoc, doc, collection, getDocs, setDoc } from "@firebase/firestore";
+import { getAuth } from "@clerk/remix/ssr.server";
 
-export const loader = async ({ params }: LoaderArgs) => {
-	const data = await getCourse(params.courseId as string);
+export const loader = async (args: LoaderArgs) => {
+	const { userId } = await getAuth(args);
+
+	const data = await getCourse(args.params.courseId as string);
 
 	if (data.error) {
 		throw new Response(null, {
 			status: 404,
-			statusText: "Not Found",
+			statusText: "Course Not Found",
 		});
 	} else {
-		const chat = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"))
-		
+		if (!data.completed) {
+			throw new Response(null, {
+				status: 404,
+				statusText: "Course Not Found",
+			});
+		}
+		if (!data.public) {
+			if (userId == null) {
+				return redirect("/login?redirect_url=" + args.request.url);
+			} else if (userId != data.author.id) {
+				throw new Response(null, {
+					status: 404,
+					statusText: "Course Not Found",
+				});
+			}
+		}
+
+		const chat = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"));
+
 		return json({
-			params: params,
-			data: await getCourse(params.courseId as string),
-			chat: chat.data()
+			params: args.params,
+			data: await getCourse(args.params.courseId as string),
+			chat: chat.data(),
 		});
 	}
 };
 
 export async function action({ request }: ActionArgs) {
 	const formData = await request.formData();
-	const formObject = Object.fromEntries(formData)
+	const formObject = Object.fromEntries(formData);
 	let prompt = formObject.message.toString();
 	let courseId = formObject.courseId.toString();
 	let transcript = formObject.transcript.toString();
@@ -72,7 +86,7 @@ export async function action({ request }: ActionArgs) {
 
 export default function PostSlug() {
 	const { params, data, chat } = useLoaderData<typeof loader>();
-	
+
 	const chapterInfo = data.units[params.unitId].chapters[params.chapterId];
 	const [check, setCheck] = useState(false);
 	return (
@@ -121,23 +135,35 @@ export default function PostSlug() {
 						</Stack>
 
 						<Stack w={{ base: "100%", md: "xl" }}>
-							
-							
 							<HStack>
-								<Button size="md" onClick={() => { setCheck(true) }}>
+								<Button
+									size="md"
+									onClick={() => {
+										setCheck(true);
+									}}
+								>
 									Knowledge Check
 								</Button>
-								<Spacer/>
-								<Button size="md" onClick={() => { setCheck(false) }}>
+								<Spacer />
+								<Button
+									size="md"
+									onClick={() => {
+										setCheck(false);
+									}}
+								>
 									ChatBot
 								</Button>
 							</HStack>
 							{check && <KnowledgeCheck chapterInfo={chapterInfo} />}
-							{!check && <ChatBox data={{
-								id: params.courseId,
-								transcript: chapterInfo.summary,
-								chat: chat
-							}} />}
+							{!check && (
+								<ChatBox
+									data={{
+										id: params.courseId,
+										transcript: chapterInfo.summary,
+										chat: chat,
+									}}
+								/>
+							)}
 						</Stack>
 					</Stack>
 					<Spacer />
@@ -294,88 +320,124 @@ function KnowledgeCheck(chapterInfo: any) {
 		);
 	};
 
-	return <Stack>
-		{chapterInfo.quiz.map((question: any, index: number) => (
-			<Question
-				correct={answers[index] === "correct"}
-				incorrect={answers[index] === "incorrect"}
-				question={question}
-				onChange={(newValue: string) => {
-					const newAnswers = [...answers];
-					newAnswers[index] = newValue;
-					setAnswers(newAnswers);
-				}}
-				key={index}
-			/>
-		))}
-		<Button onClick={submitQuiz}>Submit</Button>
-		{alert.length > 0 ? (
-			<Box>
-				<Alert
-					status={percentCorrect > 0.8 ? "success" : "error"}
-					borderRadius={"md"}
-				>
-					<AlertIcon />
-					<Text fontSize={{ base: "sm", md: "md" }}>{alert}</Text>
-				</Alert>
-			</Box>
-		) : (
-			""
-		)}
-	</Stack>
+	return (
+		<Stack>
+			{chapterInfo.quiz.map((question: any, index: number) => (
+				<Question
+					correct={answers[index] === "correct"}
+					incorrect={answers[index] === "incorrect"}
+					question={question}
+					onChange={(newValue: string) => {
+						const newAnswers = [...answers];
+						newAnswers[index] = newValue;
+						setAnswers(newAnswers);
+					}}
+					key={index}
+				/>
+			))}
+			<Button onClick={submitQuiz}>Submit</Button>
+			{alert.length > 0 ? (
+				<Box>
+					<Alert
+						status={percentCorrect > 0.8 ? "success" : "error"}
+						borderRadius={"md"}
+					>
+						<AlertIcon />
+						<Text fontSize={{ base: "sm", md: "md" }}>{alert}</Text>
+					</Alert>
+				</Box>
+			) : (
+				""
+			)}
+		</Stack>
+	);
 }
 
 function ChatBox(data: any) {
-	let courseId = (data.data.id);
+	let courseId = data.data.id;
 	let transcript = data.data.transcript;
-	let chat = (data.data.chat);
+	let chat = data.data.chat;
 	if (!chat.examples || courseId != chat.courseId) {
-		chat.examples = []
+		chat.examples = [];
 	}
-	let [value, setValue] = useState('');
+	let [value, setValue] = useState("");
 	console.log("ENTEREDDDD");
 
-	return <Stack w="100%" h={"100%"}>
-		<Box height={"500px"} overflow={"hidden"} overflowY={"scroll"}>
-			{(chat.examples).map((example: any) => (
-				<Stack w="100%" h="100%">
-					<HStack>
-						<Spacer />
-						<Box width={"280px"} backgroundColor={"blue.800"} borderRadius={"8px"} >
-							<Text wordBreak={"break-word"} padding={"8px"} overflowY={"hidden"}>{example.input.content}</Text>
-						</Box>
-						<Stack>
-							<Spacer/>
-							<Avatar name="user" size="xs" src="https://media.istockphoto.com/id/1300845620/vector/user-icon-flat-isolated-on-white-background-user-symbol-vector-illustration.jpg?s=612x612&w=0&k=20&c=yBeyba0hUkh14_jgv1OKqIH0CCSWU_4ckRkAoy2p73o="></Avatar>
-						</Stack>
-					</HStack>
-					<HStack>
-						
-							<Avatar name="user" size="xs" src="https://media.istockphoto.com/id/1300845620/vector/user-icon-flat-isolated-on-white-background-user-symbol-vector-illustration.jpg?s=612x612&w=0&k=20&c=yBeyba0hUkh14_jgv1OKqIH0CCSWU_4ckRkAoy2p73o="></Avatar>
-						
-						<Stack>
-							
-							<Box width={"280px"} backgroundColor={"blue.800"} borderRadius={"8px"} >
-								<Text wordBreak={"break-word"} padding={"8px"} overflowY={"hidden"}>{example.output.content}</Text>
-								<Spacer/>
+	return (
+		<Stack w="100%" h={"100%"}>
+			<Box height={"500px"} overflow={"hidden"} overflowY={"scroll"}>
+				{chat.examples.map((example: any) => (
+					<Stack w="100%" h="100%">
+						<HStack>
+							<Spacer />
+							<Box
+								width={"280px"}
+								backgroundColor={"blue.800"}
+								borderRadius={"8px"}
+							>
+								<Text
+									wordBreak={"break-word"}
+									padding={"8px"}
+									overflowY={"hidden"}
+								>
+									{example.input.content}
+								</Text>
 							</Box>
-						</Stack>
-					</HStack>
-				</Stack>
-			))}
-		</Box>
-		<Spacer />
-		<Form method="post">
-			<Input type="hidden" value={courseId} name="courseId" />
-			<Input type="hidden" value={transcript} name="transcript" />
-			<Textarea placeholder="Send Message" value={value} onChange={(e) => setValue(e.currentTarget.value)} name="message" onKeyDown={(e) => {
-				if (e.code == "Enter") {
-					e.preventDefault();
-					setValue('');
-					document.forms[0].submit();
-				}
-			}}/>
-			<Box height={"2px"}/>
-		</Form>
-	</Stack>;
+							<Stack>
+								<Spacer />
+								<Avatar
+									name="user"
+									size="xs"
+									src="https://media.istockphoto.com/id/1300845620/vector/user-icon-flat-isolated-on-white-background-user-symbol-vector-illustration.jpg?s=612x612&w=0&k=20&c=yBeyba0hUkh14_jgv1OKqIH0CCSWU_4ckRkAoy2p73o="
+								></Avatar>
+							</Stack>
+						</HStack>
+						<HStack>
+							<Avatar
+								name="user"
+								size="xs"
+								src="https://media.istockphoto.com/id/1300845620/vector/user-icon-flat-isolated-on-white-background-user-symbol-vector-illustration.jpg?s=612x612&w=0&k=20&c=yBeyba0hUkh14_jgv1OKqIH0CCSWU_4ckRkAoy2p73o="
+							></Avatar>
+
+							<Stack>
+								<Box
+									width={"280px"}
+									backgroundColor={"blue.800"}
+									borderRadius={"8px"}
+								>
+									<Text
+										wordBreak={"break-word"}
+										padding={"8px"}
+										overflowY={"hidden"}
+									>
+										{example.output.content}
+									</Text>
+									<Spacer />
+								</Box>
+							</Stack>
+						</HStack>
+					</Stack>
+				))}
+			</Box>
+			<Spacer />
+			<Form method="post">
+				<Input type="hidden" value={courseId} name="courseId" />
+				<Input type="hidden" value={transcript} name="transcript" />
+				<Textarea
+					placeholder="Send Message"
+					value={value}
+					onChange={(e) => setValue(e.currentTarget.value)}
+					name="message"
+					onKeyDown={(e) => {
+						if (e.code == "Enter") {
+							e.preventDefault();
+							setValue("");
+							document.forms[0].submit();
+						}
+					}}
+				/>
+				<Box height={"2px"} />
+			</Form>
+		</Stack>
+	);
 }

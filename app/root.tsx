@@ -1,19 +1,23 @@
 import {
 	ChakraProvider,
 	Box,
-	Heading,
 	Text,
 	Flex,
 	Link,
 	HStack,
-	StackDivider,
-	Center,
-	Alert,
-	AlertIcon,
-	AlertTitle,
+	Button,
+	Heading,
 	AlertDescription,
+	AlertIcon,
+	Center,
+	AlertTitle,
+	Alert,
 } from "@chakra-ui/react";
-import type { LinksFunction, MetaFunction } from "@remix-run/node";
+import type {
+	LinksFunction,
+	LoaderFunction,
+	MetaFunction,
+} from "@remix-run/node";
 import {
 	Links,
 	LiveReload,
@@ -29,6 +33,14 @@ import { Link as RemixLink } from "@remix-run/react";
 import NProgress from "nprogress";
 import nProgressStyles from "nprogress/nprogress.css";
 import { useEffect } from "react";
+import { rootAuthLoader } from "@clerk/remix/ssr.server";
+import {
+	ClerkApp,
+	V2_ClerkErrorBoundary,
+	ClerkCatchBoundary,
+	UserButton,
+	useUser,
+} from "@clerk/remix";
 
 export const meta: MetaFunction = () => ({
 	charset: "utf-8",
@@ -36,6 +48,18 @@ export const meta: MetaFunction = () => ({
 
 export let links: LinksFunction = () => {
 	return [{ rel: "stylesheet", href: nProgressStyles }];
+};
+
+export const loader: LoaderFunction = (args) => {
+	return rootAuthLoader(
+		args,
+		({ request }) => {
+			const { userId } = request.auth;
+			console.log(userId);
+			return { yourData: "here" };
+		},
+		{ loadUser: true }
+	);
 };
 
 function Document({
@@ -68,9 +92,9 @@ function Document({
 	);
 }
 
-export default function App() {
+const App = () => {
 	const transition = useNavigation();
-	
+
 	useEffect(() => {
 		if (transition.state !== "idle") {
 			NProgress.start();
@@ -78,6 +102,8 @@ export default function App() {
 			NProgress.done();
 		}
 	}, [transition.state]);
+
+	const { isSignedIn, isLoaded, user } = useUser();
 
 	return (
 		<Document>
@@ -115,6 +141,18 @@ export default function App() {
 							<Link as={RemixLink} to="/contact" mx={2} color="white">
 								Contact
 							</Link>
+							{isSignedIn ? (
+								<UserButton />
+							) : (
+								<>
+									<Link as={RemixLink} to="/login" mx={2} color="white">
+										Login
+									</Link>
+									<Button as={RemixLink} to="/signup" mx={2} colorScheme="blue">
+										Signup
+									</Button>
+								</>
+							)}
 						</HStack>
 					</Flex>
 					<Box h="calc(100vh - 90px)">
@@ -124,29 +162,16 @@ export default function App() {
 			</ChakraProvider>
 		</Document>
 	);
-}
+};
 
-// How ChakraProvider should be used on CatchBoundary
-export function CatchBoundary() {
-	const caught = useCatch();
+export default ClerkApp(App);
 
-	return (
-		<Document title={`${caught.status} ${caught.statusText}`}>
-			<ChakraProvider theme={theme}>
-				<Box>
-					<Heading as="h1" bg="purple.600">
-						[CatchBoundary]: {caught.status} {caught.statusText}
-					</Heading>
-				</Box>
-			</ChakraProvider>
-		</Document>
-	);
-}
+export const CatchBoundary = ClerkCatchBoundary();
 
-// How ChakraProvider should be used on ErrorBoundary
-export function ErrorBoundary({ error }: { error: Error }) {
+const ErrorBoundaryCustom = ({ error }: { error: Error }) => {
 	console.log("root ErrorBoundary");
 	console.error(error);
+
 	return (
 		<Document title="Error!">
 			<ChakraProvider theme={theme}>
@@ -173,13 +198,22 @@ export function ErrorBoundary({ error }: { error: Error }) {
 						>
 							Coursify
 						</Text>
-						<HStack spacing={{ base: 2, md: 4 }}>
+						<HStack spacing={{ base: 1, md: 4 }}>
 							<Link as={RemixLink} to="/" mx={2} color="white">
 								Create New Course
 							</Link>
 							<Link as={RemixLink} to="/gallery" mx={2} color="white">
-								Course Gallery
+								Gallery
 							</Link>
+							<Link as={RemixLink} to="/contact" mx={2} color="white">
+								Contact
+							</Link>
+							<Link as={RemixLink} to="/login" mx={2} color="white">
+								Login
+							</Link>
+							<Button as={RemixLink} to="/signup" mx={2} colorScheme="blue">
+								Signup
+							</Button>
 						</HStack>
 					</Flex>
 
@@ -208,4 +242,7 @@ export function ErrorBoundary({ error }: { error: Error }) {
 			</ChakraProvider>
 		</Document>
 	);
-}
+};
+
+// @ts-ignore
+export const ErrorBoundary = V2_ClerkErrorBoundary(ErrorBoundaryCustom);

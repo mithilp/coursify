@@ -11,6 +11,9 @@ import {
 	Heading,
 	Center,
 	Spinner,
+	Avatar,
+	AvatarBadge,
+	AvatarGroup,
 } from "@chakra-ui/react";
 import { Link as RemixLink } from "@remix-run/react";
 
@@ -66,7 +69,31 @@ export default function GalleryResult({
 									: titleCase(courseView.title)}
 							</LinkOverlay>
 						</Heading>
+
 						<Divider borderColor="gray.400" />
+
+						<Stack spacing={1}>
+							<Box
+								color="gray.500"
+								fontWeight="semibold"
+								letterSpacing="wide"
+								fontSize="xs"
+								textTransform="uppercase"
+							>
+								Made by
+							</Box>
+							<Stack direction={"row"} align={"center"}>
+								{courseView.author == undefined ? (
+									<Avatar size="sm" />
+								) : (
+									<Avatar name={courseView.author.username} size="sm" />
+								)}
+
+								<Text>
+									{courseView.author ? courseView.author.username : "Anonymous"}
+								</Text>
+							</Stack>
+						</Stack>
 
 						<Stack spacing={1}>
 							<Box
