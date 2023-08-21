@@ -20,16 +20,20 @@ import {
 	Textarea,
 	Avatar,
 	Input,
+	Tabs,
+	TabList,
+	Tab,
+	TabPanels,
+	TabPanel,
 } from "@chakra-ui/react";
 import Question from "../../src/components/Question";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
 import CourseSidebar from "src/components/CourseSidebar";
 import { useState } from "react";
-// import { chat } from "../globalChatVariable";
 import { chatBot } from "../models/course.server";
-import type { ActionArgs } from "@remix-run/node"; // or cloudflare/deno
+import type { ActionArgs } from "@remix-run/node";
 import { db } from "../../src/utils/firebase";
-import { getDoc, doc, collection, getDocs, setDoc } from "@firebase/firestore";
+import { getDoc, doc } from "@firebase/firestore";
 import { getAuth } from "@clerk/remix/ssr.server";
 
 export const loader = async (args: LoaderArgs) => {
@@ -79,8 +83,6 @@ export async function action({ request }: ActionArgs) {
 	console.log("courseID", courseId);
 	await chatBot(prompt, transcript, courseId);
 
-	let chat_examples = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"));
-
 	return true;
 }
 
@@ -88,7 +90,7 @@ export default function PostSlug() {
 	const { params, data, chat } = useLoaderData<typeof loader>();
 
 	const chapterInfo = data.units[params.unitId].chapters[params.chapterId];
-	const [check, setCheck] = useState(false);
+
 	return (
 		<Stack direction={"row"} h="100%">
 			<CourseSidebar data={data} params={params} />
@@ -134,37 +136,27 @@ export default function PostSlug() {
 							</Text>
 						</Stack>
 
-						<Stack w={{ base: "100%", md: "xl" }}>
-							<HStack>
-								<Button
-									size="md"
-									onClick={() => {
-										setCheck(true);
-									}}
-								>
-									Knowledge Check
-								</Button>
-								<Spacer />
-								<Button
-									size="md"
-									onClick={() => {
-										setCheck(false);
-									}}
-								>
-									ChatBot
-								</Button>
-							</HStack>
-							{check && <KnowledgeCheck chapterInfo={chapterInfo} />}
-							{!check && (
-								<ChatBox
-									data={{
-										id: params.courseId,
-										transcript: chapterInfo.summary,
-										chat: chat,
-									}}
-								/>
-							)}
-						</Stack>
+						<Tabs minW={{ base: "none", md: "xs" }}>
+							<TabList>
+								<Tab>Knowledge Check</Tab>
+								<Tab>CourseBot</Tab>
+							</TabList>
+
+							<TabPanels>
+								<TabPanel>
+									<KnowledgeCheck chapterInfo={chapterInfo} />
+								</TabPanel>
+								<TabPanel>
+									<ChatBox
+										data={{
+											id: params.courseId,
+											transcript: chapterInfo.summary,
+											chat: chat,
+										}}
+									/>
+								</TabPanel>
+							</TabPanels>
+						</Tabs>
 					</Stack>
 					<Spacer />
 					<Divider />
@@ -361,7 +353,7 @@ function ChatBox(data: any) {
 		chat.examples = [];
 	}
 	let [value, setValue] = useState("");
-	console.log("ENTEREDDDD");
+	console.log("message sent");
 
 	return (
 		<Stack w="100%" h={"100%"}>
