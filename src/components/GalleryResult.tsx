@@ -106,7 +106,7 @@ export default function GalleryResult({
 								units
 							</Box>
 							{courseView.units.map((unit: any, i: number) => (
-								<Link as={RemixLink} to={`/course/${courseId}/${i}/0`}>
+								<Link key={i} as={RemixLink} to={`/course/${courseId}/${i}/0`}>
 									{unit.title}
 								</Link>
 							))}

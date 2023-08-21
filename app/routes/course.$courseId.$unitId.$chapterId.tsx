@@ -366,8 +366,8 @@ function ChatBox(data: any) {
 	return (
 		<Stack w="100%" h={"100%"}>
 			<Box height={"500px"} overflow={"hidden"} overflowY={"scroll"}>
-				{chat.examples.map((example: any) => (
-					<Stack w="100%" h="100%">
+				{chat.examples.map((example: any, i: number) => (
+					<Stack w="100%" h="100%" key={i}>
 						<HStack>
 							<Spacer />
 							<Box
