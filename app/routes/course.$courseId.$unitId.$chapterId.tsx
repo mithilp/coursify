@@ -139,14 +139,14 @@ export default function PostSlug() {
 						<Tabs minW={{ base: "none", md: "xs" }}>
 							<TabList>
 								<Tab>Knowledge Check</Tab>
-								<Tab>CourseBot</Tab>
+								{/* <Tab>CourseBot</Tab> */}
 							</TabList>
 
 							<TabPanels>
 								<TabPanel>
 									<KnowledgeCheck chapterInfo={chapterInfo} />
 								</TabPanel>
-								<TabPanel>
+								{/* <TabPanel>
 									<ChatBox
 										data={{
 											id: params.courseId,
@@ -154,7 +154,7 @@ export default function PostSlug() {
 											chat: chat,
 										}}
 									/>
-								</TabPanel>
+								</TabPanel> */}
 							</TabPanels>
 						</Tabs>
 					</Stack>

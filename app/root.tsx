@@ -55,6 +55,7 @@ export const loader: LoaderFunction = (args) => {
 		args,
 		({ request }) => {
 			const { userId } = request.auth;
+			console.log("hello")
 			console.log(userId);
 			return { yourData: "here" };
 		},
@@ -104,7 +105,9 @@ const App = () => {
 	}, [transition.state]);
 
 	const { isSignedIn, isLoaded, user } = useUser();
-
+	const userId = user?.id.substring(5, user.id.length);
+	// console.log("TEXT 1");
+	// console.log(user.id);
 	return (
 		<Document>
 			<ChakraProvider theme={theme}>
@@ -141,6 +144,9 @@ const App = () => {
 							<Link as={RemixLink} to="/contact" mx={2} color="white">
 								Contact
 							</Link>
+							{isSignedIn ? (
+								<Link as={RemixLink} to={`/profile/${userId}`}>Profile</Link>
+							) : (<></>)}
 							{isSignedIn ? (
 								<UserButton />
 							) : (
