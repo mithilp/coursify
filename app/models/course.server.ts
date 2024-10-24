@@ -53,7 +53,7 @@ export async function getCourse(id: string): Promise<any> {
 	}
 }
 
-export async function promptGemini(prompt: string, json?: boolean) {
+export async function promptGemini(prompt: string) {
 	const response = await fetch(
 		`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API}`,
 		{
@@ -73,22 +73,27 @@ export async function promptGemini(prompt: string, json?: boolean) {
 							],
 						},
 					],
+
 					generationConfig: {
 						temperature: 1,
 						topK: 64,
 						topP: 0.95,
 						maxOutputTokens: 8192,
 						responseMimeType: "application/json",
-					},
+					}
 				}
 
 			),
 		}
 	);
 	const jsonResponse = await response.json();
+
+	console.log(prompt, '\n', jsonResponse);
+
 	return jsonResponse.candidates[0].content.parts[0].text;
 }
 
+// returns id of video given search query
 export async function searchYouTube(searchQuery: string) {
 	const response = await fetch(
 		`https://www.googleapis.com/youtube/v3/search?key=${process.env.YOUTUBE_API}&q=${searchQuery}&videoDuration=medium&videoEmbeddable=true&type=video&part=snippet&maxResults=1`,
@@ -103,6 +108,7 @@ export async function searchYouTube(searchQuery: string) {
 	return json.items[0].id.videoId;
 }
 
+// returns transcript of video given video id
 export async function getTranscript(videoId: string) {
 	try {
 		let transcript_arr = await YoutubeTranscript.fetchTranscript(videoId, {
@@ -170,20 +176,6 @@ export async function createChapters(title: string, unitsArray: string[]) {
 		console.log("created chapters");
 		console.log(geminiResponse);
 
-		// const courseInfoFragments = geminiResponse.split("[");
-		// let courseInfoString = "";
-		// for (const i in courseInfoFragments) {
-		// 	if (Number(i) === 0) {
-		// 	} else {
-		// 		if (Number(i) == courseInfoFragments.length - 1) {
-		// 			courseInfoString += "[";
-		// 			courseInfoString += courseInfoFragments[i].split("`")[0];
-		// 		} else {
-		// 			courseInfoString += "[";
-		// 			courseInfoString += courseInfoFragments[i];
-		// 		}
-		// 	}
-		// }
 		const units = await JSON.parse(geminiResponse);
 		console.log("created chapters");
 		const docRef = await addDoc(collection(db, "courses"), {

@@ -75,114 +75,75 @@ export const action = async ({ request }: ActionArgs) => {
 			let youtube_search_query = formData.get("youtube_search_query") as string;
 			const videoId = await searchYouTube(youtube_search_query);
 			const transcript = await getTranscript(videoId);
-			let summaryPrompt;
+
+			let combinedPrompt; // Variable to hold the prompt for the AI (Gemini)
+
+			// Check if the transcript was successfully provided
 			if (transcript.success) {
-				summaryPrompt = `summarize in 250 words or less and don't talk of the sponsors or anything unrelated to the main topic. also do not introduce what the summary is about:\n${transcript}`;
+				// If transcript is available, ask for both a summary and a quiz based on the transcript
+				combinedPrompt = `
+    Please perform the following two tasks based on the provided transcript:
+    1. Summarize the transcript in 250 words or less. Do not mention sponsors or anything unrelated to the main topic. Do not introduce the summary with phrases like "This is a summary."
+    2. Generate at least 3 general educational quiz questions based on the transcript. The questions should cover the entire content and not focus on specific details. The output should be an array of questions, with each question containing a question string, 4 answer choices in an array, and the index of the correct answer.
+
+    Here is the transcript: ${transcript}
+
+    Return your answer in the following JSON format:
+    {
+      "chapter_title": "${chapter_title}",
+      "summary": "<summary>",
+      "quiz": [
+        {
+          "question": "<question>",
+          "choices": ["choice1", "choice2", "choice3", "choice4"],
+          "answer": <index>
+        },
+        ...
+      ]
+    }`;
 			} else {
-				summaryPrompt = `summarize the topic ${chapter_title} in 250 words or less`;
-			}
-			let summary;
-			let gotSummary = false;
-			let triedSummary = 0;
-			while (!gotSummary) {
-				if (triedSummary < 5) {
-					try {
-						summary = await promptGemini(summaryPrompt);
-						gotSummary = true;
-						console.log("got summary");
-					} catch (error) {
-						console.log("FAILED: Error Info getting summary");
-						console.log("prompt:\n", summaryPrompt);
-						console.log("error:\n", error, "\n\n");
-					}
-					triedSummary++;
-				} else {
-					throw new Error("tried getting summary too many times");
-				}
-			}
-			console.log("summary:", summary);
+				// If transcript is not available, ask for a summary and quiz based on the chapter title alone
+				combinedPrompt = `
+    Please perform the following two tasks:
+    1. Summarize the topic "${chapter_title}" in 250 words or less.
+    2. Generate at least 3 general educational quiz questions related to the topic. The output should be an array of questions, with each question containing a question string, 4 answer choices in an array, and the index of the correct answer.
 
-			let quizPrompt;
-			if (transcript.success) {
-				quizPrompt = `${transcript}\n
-			Generate at least a 3 question educational informative quiz on the text given above. The questions should be on the material of the entire transcript as a whole. The question should be knowledgeable and not about the specifics. The question should relate to ${chapter_title}. The output has to be an array of questions. Each question should have a question, which is a string question, the choices, which is 4 possible answer choices represented in an array, and the answer, which is the index of the answer in the choices array.
+    Return your answer in the following JSON format:
+    {
+      "chapter_title": "${chapter_title}",
+      "summary": "<summary>",
+      "quiz": [
+        {
+          "question": "<question>",
+          "choices": ["choice1", "choice2", "choice3", "choice4"],
+          "answer": <index>
+        },
+        ...
+      ]
+    }`;
+			}
 
-			Here is an example answer:
-			[
-			{
-				"question": "What is (sqrt(16)+5-4)/1/24",
-				"choices": ["100", "120", "40", "12"],
-				"answer": 1
-			},
-			{
-				"question": "What is a forrier trnasformation?",
-				"choices": ["a transform that converts a function into a form that describes the frequencies present in the original function", "infinite sum of terms that approximate a function as a polynomial", "mathematical function that can be formally defined as an improper Riemann integral", "certain kind of approximation of an integral by a finite sum"],
-				"answer": 0
-			}
-			]`;
-			} else {
-				quizPrompt = `${transcript}\n
-			Generate at least a 3 question educational informative quiz on the topic ${chapter_title}. The question should be knowledgeable and general, and not about the specifics. The questions should all relate to ${chapter_title}. The output has to be an array of questions. Each question should have a question, which is a string question, the choices, which is 4 possible answer choices represented in an array, and the answer, which is the index of the answer in the choices array.
+			// Send the combined prompt to Gemini to get both the summary and quiz
+			const combinedResponse = await promptGemini(combinedPrompt);
+			console.log(chapter_title, " combinedResponse\n", combinedResponse);
 
-			Here is an example answer:
-			[
-			{
-				"question": "What is (sqrt(16)+5-4)/1/24",
-				"choices": ["100", "120", "40", "12"],
-				"answer": 1
-			},
-			{
-				"question": "What is a forrier trnasformation?",
-				"choices": ["a transform that converts a function into a form that describes the frequencies present in the original function", "infinite sum of terms that approximate a function as a polynomial", "mathematical function that can be formally defined as an improper Riemann integral", "certain kind of approximation of an integral by a finite sum"],
-				"answer": 0
-			}
-			]`;
-			}
-			let quizJSON;
-			let gotQuiz = false;
-			let triedQuiz = 0;
-			while (!gotQuiz) {
-				if (triedQuiz < 5) {
-					try {
-						let quiz = await promptGemini(quizPrompt);
-						console.log("got gemini quiz response");
-						const quizFragments = quiz.split("[");
-						let quizString = "";
-						for (const i in quizFragments) {
-							if (Number(i) == 0) {
-							} else {
-								if (Number(i) == quizFragments.length - 1) {
-									quizString += "[";
-									quizString += quizFragments[i].split("`")[0];
-								} else {
-									quizString += "[";
-									quizString += quizFragments[i];
-								}
-							}
-						}
-						console.log("about to parse quiz");
-						quizJSON = await JSON.parse(quizString);
-						gotQuiz = true;
-						console.log("parsed quiz");
-					} catch (error) {
-						console.log("FAILED: Error Info getting guiz");
-						console.log("prompt:\n", quizPrompt);
-						console.log("error:\n", error, "\n\n");
-					}
-					triedQuiz++;
-				} else {
-					throw new Error("tried getting quiz too many times");
-				}
-			}
-			console.log("quiz:", quizJSON);
+			// Parse the response from Gemini to extract the summary and quiz
+			const parsedResponse = JSON.parse(combinedResponse);
+			const summary = parsedResponse.summary; // Extract the summary
+			const quiz = parsedResponse.quiz; // Extract the quiz
 
+			// Log the summary and quiz to the console for debugging
+			console.log(chapter_title, " summary\n", summary);
+			console.log(chapter_title, " quiz\n", quiz);
+
+			// Return an object containing the success flag and chapter information (title, video ID, summary, and quiz)
 			return {
 				success: true,
 				chapterInfo: {
-					title: chapter_title,
-					video: videoId,
-					summary: summary,
-					quiz: quizJSON,
+					title: chapter_title, // The chapter title
+					video: videoId, // Video ID related to the chapter (if applicable)
+					summary: summary, // Summary generated from the transcript or chapter title
+					quiz: quiz, // Quiz generated from the transcript or chapter title
 				},
 			};
 		}
