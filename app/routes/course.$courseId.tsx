@@ -3,7 +3,7 @@ import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { getCourse } from "~/models/course.server";
 import { Box, Stack } from "@chakra-ui/react";
-import CourseSidebar from "src/components/CourseSidebar";
+import CourseSidebar from "~/components/CourseSidebar";
 
 export const loader = async ({ params }: LoaderArgs) => {
 	const data = await getCourse(params.courseId as string);

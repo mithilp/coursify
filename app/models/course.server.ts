@@ -1,5 +1,5 @@
 import { YoutubeTranscript } from "youtube-transcript";
-import { db } from "../../src/utils/firebase";
+import { db } from "../utils/firebase";
 import {
 	getDoc,
 	addDoc,
@@ -69,6 +69,7 @@ export async function promptGemini(prompt: string) {
 							{
 								text: prompt,
 							},
+
 						],
 					},
 				],
@@ -86,6 +87,57 @@ export async function promptGemini(prompt: string) {
 	const jsonResponse = await response.json();
 
 	console.log(prompt, "\n", jsonResponse);
+
+	return jsonResponse.candidates[0].content.parts[0].text;
+}
+
+export async function geminiChatCompletion(prompt: string, previousMessages: Array<{ content: string, from: "user" | "bot" }>) {
+
+	const contents = previousMessages.map((message) => {
+		return {
+			role: message.from == "user" ? "user" : "model",
+			parts: [
+				{
+					text: message.content,
+				},
+
+			],
+		}
+	})
+	contents.push({
+
+		role: "user",
+		parts: [
+			{
+				text: prompt,
+			},
+
+		],
+
+	})
+
+
+	const response = await fetch(
+		`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API}`,
+		{
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				contents: contents,
+
+				generationConfig: {
+					temperature: 1,
+					topK: 64,
+					topP: 0.95,
+					maxOutputTokens: 8192,
+					responseMimeType: "application/json",
+				},
+			}),
+		}
+	);
+	const jsonResponse = await response.json();
 
 	return jsonResponse.candidates[0].content.parts[0].text;
 }
@@ -241,52 +293,14 @@ export async function queryChat(
 
 export async function chatBot(
 	prompt: string,
-	id: string,
-	unitId: string,
-	chapterId: string,
-	chat: any
+	chapTitle: string,
+	chapSummary: string,
+	previousMessages: Array<{ content: string, from: "user" | "bot" }>,
+	courseId: string,
+	unitId: number
 ) {
-	console.log("CHATBOT ENTERED");
+	const course = await getCourse(courseId);
 
-	console.log(id);
-	// const document = await getDoc(doc(db, "chat", id));
-	// let data: any;
-
-	// if (document.exists()) {
-	// 	data = document.data();
-	// 	console.log(data);
-	// } else {
-	// 	data = {
-	// 		courseId: "",
-	// 		examples: [],
-	// 		messages: [],
-	// 	};
-	// }
-	// let examples = data.examples;
-	// let messages = data.messages;
-	// let courseId = data.courseId;
-
-	// if (id != data.courseId) {
-	// 	courseId = id;
-	// 	examples = [];
-	// 	messages = [];
-	// }
-
-	// [examples, messages] = await queryChat(prompt, context, examples, messages);
-
-	// const docRef = await setDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"), {
-	// 	courseId: courseId,
-	// 	examples: examples,
-	// 	messages: messages,
-	// });
-	// return examples;
-
-	if (chat.courseId != id) {
-		chat.examples = [];
-		chat.courseId = id;
-	}
-
-	const course = await getCourse(id);
 	prompt =
 		"answer in simple english. THE FOLLOWING IS THE PROMPT: " +
 		prompt +
@@ -295,32 +309,14 @@ export async function chatBot(
 		". The course has the following unit titles and chapters: " +
 		course.units[unitId].title +
 		" with the current chapter on " +
-		course.units[unitId].chapters[chapterId].title +
+		chapTitle +
 		" and a summary of " +
-		course.units[unitId].chapters[chapterId].summary;
+		chapSummary;
 
-	const response = await promptGemini(
-		// "ONE TO TWO SENTEC ANSWER" +JSON.stringify(course) +
-		// 	"\nThe above is context about the course. The below is the actual question you have been asked: " +
-		// 	prompt
-		prompt
+	const response = await geminiChatCompletion(
+		prompt,
+		previousMessages
 	);
-	console.log("prompt");
-	console.log(prompt);
-	console.log("chat bot response");
-	console.log(response["answer"]);
 
-	chat.examples.push({
-		input: {
-			content: prompt,
-		},
-		output: {
-			content: JSON.parse(response).answer
-				? JSON.parse(response).answer
-				: response,
-		},
-	});
-	console.log("\n\nCURRENT CHAT");
-	console.log(chat);
-	return chat;
+	return JSON.parse(response).answer;
 }

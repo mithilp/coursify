@@ -14,7 +14,7 @@ import {
 import { getAllCourses } from "~/models/course.server";
 import { useLoaderData } from "@remix-run/react";
 import { Form } from "@remix-run/react";
-import GalleryResult from "src/components/GalleryResult";
+import GalleryResult from "~/components/GalleryResult";
 import { FaSearch } from "react-icons/fa";
 import { useState } from "react";
 import Fuse from "fuse.js";

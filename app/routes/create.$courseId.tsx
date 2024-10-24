@@ -32,8 +32,8 @@ import {
 	FaChevronLeft,
 	FaBars,
 } from "react-icons/fa6";
-import CreateCourseChapter from "src/components/CreateCourseChapter";
-import { db } from "src/utils/firebase";
+import CreateCourseChapter from "~/components/CreateCourseChapter";
+import { db } from "~/utils/firebase";
 import {
 	getCourse,
 	getTranscript,

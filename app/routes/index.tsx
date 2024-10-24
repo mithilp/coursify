@@ -1,4 +1,4 @@
-import Unit from "../../src/components/Unit";
+import Unit from "../components/Unit";
 import {
 	Box,
 	Heading,
