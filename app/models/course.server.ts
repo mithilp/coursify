@@ -8,7 +8,7 @@ import {
 	getDocs,
 	query,
 	where,
-	setDoc
+	setDoc,
 } from "@firebase/firestore";
 import { m } from "framer-motion";
 
@@ -68,18 +68,18 @@ export async function promptGemini(prompt: string, json?: boolean) {
 							role: "user",
 							parts: [
 								{
-									text: prompt
-								}
-							]
-						}
+									text: prompt,
+								},
+							],
+						},
 					],
 					generationConfig: {
 						temperature: 1,
 						topK: 64,
 						topP: 0.95,
 						maxOutputTokens: 8192,
-						responseMimeType: "application/json"
-					}
+						responseMimeType: "application/json",
+					},
 				}
 				// 	{
 				// 	prompt: {
@@ -111,7 +111,7 @@ export async function promptGemini(prompt: string, json?: boolean) {
 	// console.log(chat);
 	// console.log("PaLM api status: ", response.status);
 	const jsonResponse = await response.json();
-	console.log(jsonResponse.candidates[0].content.parts[0].text);
+	// console.log(jsonResponse.candidates[0].content.parts[0].text);
 	return jsonResponse.candidates[0].content.parts[0].text;
 }
 
@@ -193,7 +193,6 @@ export async function createChapters(title: string, unitsArray: string[]) {
 		console.log("created chapters");
 		console.log(geminiResponse);
 
-
 		// const courseInfoFragments = geminiResponse.split("[");
 		// let courseInfoString = "";
 		// for (const i in courseInfoFragments) {
@@ -229,21 +228,23 @@ export async function createChapters(title: string, unitsArray: string[]) {
 	}
 }
 
-export async function queryChat(prompt: string, context: string, examples: any[], messages: any[]) {
-	messages.push(
-		{
-			content: prompt
-		}
-	);
+export async function queryChat(
+	prompt: string,
+	context: string,
+	examples: any[],
+	messages: any[]
+) {
+	messages.push({
+		content: prompt,
+	});
 	const response = await fetch(
 		`https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage?key=${process.env.GEMINI_API}`,
 		{
 			method: "POST",
 			headers: {
-				'Content-Type': 'application/json',
+				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
-
 				prompt: {
 					context: context,
 					messages: messages,
@@ -252,60 +253,109 @@ export async function queryChat(prompt: string, context: string, examples: any[]
 				temperature: 0.25,
 				top_k: 40,
 				top_p: 0.95,
-				candidate_count: 1
-			})
-		},
-
-	)
+				candidate_count: 1,
+			}),
+		}
+	);
 
 	const json = await response.json();
-	examples.push(
+	console.log("QUERYCHAT");
+	console.log(json);
+	examples.push({
+		input: {
+			content: prompt,
+		},
+		output: {
+			content: json.candidates[0].content,
+		},
+	});
+
+	return [examples, messages];
+}
+
+export async function chatBot(
+	prompt: string,
+	context: string,
+	id: string,
+	unitId: string,
+	chapterId: string
+) {
+	console.log("CHATBOT ENTERED");
+
+	console.log(id);
+	// const document = await getDoc(doc(db, "chat", id));
+	// let data: any;
+
+	// if (document.exists()) {
+	// 	data = document.data();
+	// 	console.log(data);
+	// } else {
+	// 	data = {
+	// 		courseId: "",
+	// 		examples: [],
+	// 		messages: [],
+	// 	};
+	// }
+	// let examples = data.examples;
+	// let messages = data.messages;
+	// let courseId = data.courseId;
+
+	// if (id != data.courseId) {
+	// 	courseId = id;
+	// 	examples = [];
+	// 	messages = [];
+	// }
+
+	// [examples, messages] = await queryChat(prompt, context, examples, messages);
+
+	// const docRef = await setDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"), {
+	// 	courseId: courseId,
+	// 	examples: examples,
+	// 	messages: messages,
+	// });
+	// return examples;
+
+	const course = await getCourse(id);
+	context =
+		"answer in simple english. THE FOLLOWING IS THE PROMPT: " +
+		prompt +
+		"\nONE TO TWO SETNENCE ANSWER USING THE FOLLOWING CONTEXT USING PLAIN AND SIMPLE ENGLISH. The title of the course is: " +
+		course.title +
+		". The course has the following unit titles and chapters: " +
+		course.units[unitId].title +
+		" with the current chapter on " +
+		course.units[unitId].chapters[chapterId].title +
+		" and a summary of " +
+		course.units[unitId].chapters[chapterId].summary;
+
+	const response = await promptGemini(
+		// "ONE TO TWO SENTEC ANSWER" +JSON.stringify(course) +
+		// 	"\nThe above is context about the course. The below is the actual question you have been asked: " +
+		// 	prompt
+		context
+	);
+	console.log("context");
+	console.log(context);
+	console.log("chat bot response");
+	console.log(response["answer"]);
+
+	const examples = [
 		{
 			input: {
 				content: prompt,
 			},
 			output: {
-				content: json.candidates[0].content,
-			}
-		}
-	);
-
-	return [
-		examples,
-		messages
-	]
-}
-
-export async function chatBot(prompt: string, context: string, id: string) {
-	const document = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"));
-	let data: any;
-
-	if (document.exists()) {
-		data = document.data();
-		console.log(data);
-	} else {
-		data = {
-			courseId: "",
-			examples: [],
-			messages: []
-		};
-	}
-	let examples = data.examples;
-	let messages = data.messages;
-	let courseId = data.courseId;
-
-	if (id != data.courseId) {
-		courseId = id;
-		examples = [];
-		messages = [];
-	}
-
-	[examples, messages] = await queryChat(prompt, context, examples, messages)
-
+				content: JSON.parse(response).answer
+					? JSON.parse(response).answer
+					: response,
+			},
+		},
+	];
 	const docRef = await setDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"), {
-		courseId: courseId,
+		courseId: id,
 		examples: examples,
-		messages: messages,
+		messages: examples,
 	});
-	return examples;
+	console.log("added to firebase", docRef);
+	return response;
 }
