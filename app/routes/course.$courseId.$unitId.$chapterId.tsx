@@ -1,3 +1,4 @@
+"use client";
 import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData, Link, Form } from "@remix-run/react";
@@ -24,7 +25,8 @@ import {
 import Question from "../../src/components/Question";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
 import CourseSidebar from "src/components/CourseSidebar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import ReactDOM from "react-dom/client";
 // import { chat } from "../globalChatVariable";
 import { chatBot } from "../models/course.server";
 import type { ActionArgs } from "@remix-run/node"; // or cloudflare/deno
@@ -40,13 +42,20 @@ export const loader = async ({ params }: LoaderArgs) => {
 			statusText: "Not Found",
 		});
 	} else {
-		const chat = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"));
-
+		let chat = (await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"))) || "";
+		// useEffect(() => {
+		// 	chat = JSON.parse(localStorage.getItem("chat") || "{}");
+		// });
 		return json({
 			params: params,
 			data: await getCourse(params.courseId as string),
 			chat: chat.data(),
 		});
+		// return {
+		// 	params: params,
+		// 	data: await getCourse(params.courseId as string),
+		// 	chat: chat,
+		// };
 	}
 };
 
@@ -55,22 +64,30 @@ export async function action({ request }: ActionArgs) {
 	const formObject = Object.fromEntries(formData);
 	let prompt = formObject.message.toString();
 	let courseId = formObject.courseId.toString();
-	let transcript = formObject.transcript.toString();
 	let chapterId = formObject.chapterId.toString();
 	let unitId = formObject.unitId.toString();
+	let past_chat = JSON.parse(formObject.chat.toString());
 	console.log("courseID", courseId);
-	await chatBot(prompt, transcript, courseId, unitId, chapterId);
-
+	const response = await chatBot(
+		prompt,
+		courseId,
+		unitId,
+		chapterId,
+		past_chat
+	);
+	// localStorage.setItem("chat", JSON.stringify(response));
+	useEffect(() => {
+		localStorage.setItem("chat", JSON.stringify(response));
+	});
 	// let chat_examples = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"));
-
-	return true;
+	return response;
 }
 
-export default function PostSlug() {
+const PostSlug: React.FC = () => {
 	const { params, data, chat } = useLoaderData<typeof loader>();
-
 	const chapterInfo = data.units[params.unitId].chapters[params.chapterId];
 	const [check, setCheck] = useState(false);
+
 	return (
 		<Stack direction={"row"} h="100%">
 			<CourseSidebar data={data} params={params} />
@@ -141,7 +158,6 @@ export default function PostSlug() {
 								<ChatBox
 									data={{
 										id: params.courseId,
-										transcript: chapterInfo.summary,
 										chat: chat,
 										chapter: params.chapterId,
 										unit: params.unitId,
@@ -256,7 +272,7 @@ export default function PostSlug() {
 			</Box>
 		</Stack>
 	);
-}
+};
 
 function KnowledgeCheck(chapterInfo: any) {
 	chapterInfo = chapterInfo.chapterInfo;
@@ -339,16 +355,21 @@ function KnowledgeCheck(chapterInfo: any) {
 
 function ChatBox(data: any) {
 	let courseId = data.data.id;
-	let transcript = data.data.transcript;
 	let chat = data.data.chat;
 	let chapterId = data.data.chapter;
 	let unitId = data.data.unit;
 	if (!chat.examples || courseId != chat.courseId) {
 		chat.examples = [];
 	}
-	let [value, setValue] = useState("");
-	console.log("ENTEREDDDD");
 
+	let [value, setValue] = useState("");
+
+	console.log("ENTEREDDDD");
+	useEffect(() => {
+		chat = localStorage.getItem("chat");
+	});
+	console.log("ABCDEF");
+	console.log(chat);
 	return (
 		<Stack w="100%" h={"100%"}>
 			<Box height={"500px"} overflow={"hidden"} overflowY={"scroll"}>
@@ -408,9 +429,9 @@ function ChatBox(data: any) {
 			<Spacer />
 			<Form method="post">
 				<Input type="hidden" value={courseId} name="courseId" />
-				<Input type="hidden" value={transcript} name="transcript" />
 				<Input type="hidden" value={chapterId} name="chapterId" />
 				<Input type="hidden" value={unitId} name="unitId" />
+				<Input type="hidden" value={chat.examples} name="chat" />
 				<Textarea
 					placeholder="Send Message"
 					value={value}
@@ -429,3 +450,5 @@ function ChatBox(data: any) {
 		</Stack>
 	);
 }
+
+export default PostSlug;

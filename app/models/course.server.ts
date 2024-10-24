@@ -61,34 +61,31 @@ export async function promptGemini(prompt: string) {
 			headers: {
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify(
-				{
-					contents: [
-						{
-							role: "user",
-							parts: [
-								{
-									text: prompt,
-								},
-							],
-						},
-					],
+			body: JSON.stringify({
+				contents: [
+					{
+						role: "user",
+						parts: [
+							{
+								text: prompt,
+							},
+						],
+					},
+				],
 
-					generationConfig: {
-						temperature: 1,
-						topK: 64,
-						topP: 0.95,
-						maxOutputTokens: 8192,
-						responseMimeType: "application/json",
-					}
-				}
-
-			),
+				generationConfig: {
+					temperature: 1,
+					topK: 64,
+					topP: 0.95,
+					maxOutputTokens: 8192,
+					responseMimeType: "application/json",
+				},
+			}),
 		}
 	);
 	const jsonResponse = await response.json();
 
-	console.log(prompt, '\n', jsonResponse);
+	console.log(prompt, "\n", jsonResponse);
 
 	return jsonResponse.candidates[0].content.parts[0].text;
 }
@@ -244,10 +241,10 @@ export async function queryChat(
 
 export async function chatBot(
 	prompt: string,
-	context: string,
 	id: string,
 	unitId: string,
-	chapterId: string
+	chapterId: string,
+	chat: any
 ) {
 	console.log("CHATBOT ENTERED");
 
@@ -284,11 +281,16 @@ export async function chatBot(
 	// });
 	// return examples;
 
+	if (chat.courseId != id) {
+		chat.examples = [];
+		chat.courseId = id;
+	}
+
 	const course = await getCourse(id);
-	context =
+	prompt =
 		"answer in simple english. THE FOLLOWING IS THE PROMPT: " +
 		prompt +
-		"\nONE TO TWO SETNENCE ANSWER USING THE FOLLOWING CONTEXT USING PLAIN AND SIMPLE ENGLISH. The title of the course is: " +
+		"\nONE TO TWO SENTENCE ANSWER USING THE FOLLOWING CONTEXT USING PLAIN AND SIMPLE ENGLISH. The title of the course is: " +
 		course.title +
 		". The course has the following unit titles and chapters: " +
 		course.units[unitId].title +
@@ -301,30 +303,24 @@ export async function chatBot(
 		// "ONE TO TWO SENTEC ANSWER" +JSON.stringify(course) +
 		// 	"\nThe above is context about the course. The below is the actual question you have been asked: " +
 		// 	prompt
-		context
+		prompt
 	);
-	console.log("context");
-	console.log(context);
+	console.log("prompt");
+	console.log(prompt);
 	console.log("chat bot response");
 	console.log(response["answer"]);
 
-	const examples = [
-		{
-			input: {
-				content: prompt,
-			},
-			output: {
-				content: JSON.parse(response).answer
-					? JSON.parse(response).answer
-					: response,
-			},
+	chat.examples.push({
+		input: {
+			content: prompt,
 		},
-	];
-	const docRef = await setDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"), {
-		courseId: id,
-		examples: examples,
-		messages: examples,
+		output: {
+			content: JSON.parse(response).answer
+				? JSON.parse(response).answer
+				: response,
+		},
 	});
-	console.log("added to firebase", docRef);
-	return response;
+	console.log("\n\nCURRENT CHAT");
+	console.log(chat);
+	return chat;
 }
