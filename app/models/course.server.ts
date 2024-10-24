@@ -1,5 +1,5 @@
 import { YoutubeTranscript } from "youtube-transcript";
-import { db } from "../../src/utils/firebase";
+import { db } from "../utils/firebase";
 import {
 	getDoc,
 	addDoc,
@@ -8,7 +8,7 @@ import {
 	getDocs,
 	query,
 	where,
-	setDoc
+	setDoc,
 } from "@firebase/firestore";
 import { m } from "framer-motion";
 
@@ -53,57 +53,111 @@ export async function getCourse(id: string): Promise<any> {
 	}
 }
 
-export async function promptPalm(prompt: string) {
+export async function promptGemini(prompt: string) {
 	const response = await fetch(
-		`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${process.env.PALM_API}`,
+		`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API}`,
 		{
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
-				prompt: {
-					text: prompt,
-				},
-				temperature: 0.9,
-				top_k: 40,
-				top_p: 0.95,
-				candidate_count: 1,
-				max_output_tokens: 2048,
-				stop_sequences: [],
-				safety_settings: [
-					{ category: "HARM_CATEGORY_DEROGATORY", threshold: 3 },
-					{ category: "HARM_CATEGORY_TOXICITY", threshold: 3 },
-					{ category: "HARM_CATEGORY_VIOLENCE", threshold: 3 },
-					{ category: "HARM_CATEGORY_SEXUAL", threshold: 3 },
-					{ category: "HARM_CATEGORY_MEDICAL", threshold: 3 },
-					{ category: "HARM_CATEGORY_DANGEROUS", threshold: 3 },
+				contents: [
+					{
+						role: "user",
+						parts: [
+							{
+								text: prompt,
+							},
+
+						],
+					},
 				],
+
+				generationConfig: {
+					temperature: 1,
+					topK: 64,
+					topP: 0.95,
+					maxOutputTokens: 8192,
+					responseMimeType: "application/json",
+				},
 			}),
 		}
 	);
-	// let messages: any[] = [];
-	// let chat: any[] = [];
-	// [ chat, messages ] = await chatBot("how are you", '', chat, messages);
-	// [ chat, messages ] = await chatBot("what is 1+1", '', chat, messages);
-	// console.log("printing");
-	// console.log(chat);
-	// console.log("PaLM api status: ", response.status);
-	const json = await response.json();
-	return json.candidates[0].output;
+	const jsonResponse = await response.json();
+
+	console.log(prompt, "\n", jsonResponse);
+
+	return jsonResponse.candidates[0].content.parts[0].text;
 }
 
+export async function geminiChatCompletion(prompt: string, previousMessages: Array<{ content: string, from: "user" | "bot" }>) {
+
+	const contents = previousMessages.map((message) => {
+		return {
+			role: message.from == "user" ? "user" : "model",
+			parts: [
+				{
+					text: message.content,
+				},
+
+			],
+		}
+	})
+	contents.push({
+
+		role: "user",
+		parts: [
+			{
+				text: prompt,
+			},
+
+		],
+
+	})
+
+
+	const response = await fetch(
+		`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API}`,
+		{
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				contents: contents,
+
+				generationConfig: {
+					temperature: 1,
+					topK: 64,
+					topP: 0.95,
+					maxOutputTokens: 8192,
+					responseMimeType: "application/json",
+				},
+			}),
+		}
+	);
+	const jsonResponse = await response.json();
+
+	return jsonResponse.candidates[0].content.parts[0].text;
+}
+
+// returns id of video given search query
 export async function searchYouTube(searchQuery: string) {
 	const response = await fetch(
-		`https://aiotube.deta.dev/search/video/${searchQuery}`,
+		`https://www.googleapis.com/youtube/v3/search?key=${process.env.YOUTUBE_API}&q=${searchQuery}&videoDuration=medium&videoEmbeddable=true&type=video&part=snippet&maxResults=1`,
 		{
 			method: "GET",
 		}
 	);
 	const json = await response.json();
-	return json.id;
+	if (json.items[0] == undefined) {
+		console.log("search yt");
+	}
+	return json.items[0].id.videoId;
 }
 
+// returns transcript of video given video id
 export async function getTranscript(videoId: string) {
 	try {
 		let transcript_arr = await YoutubeTranscript.fetchTranscript(videoId, {
@@ -167,22 +221,11 @@ export async function createChapters(title: string, unitsArray: string[]) {
 	`;
 	try {
 		console.log("starting to create chapters");
-		let palmResponse = await promptPalm(prompt);
-		const courseInfoFragments = palmResponse.split("[");
-		let courseInfoString = "";
-		for (const i in courseInfoFragments) {
-			if (Number(i) === 0) {
-			} else {
-				if (Number(i) == courseInfoFragments.length - 1) {
-					courseInfoString += "[";
-					courseInfoString += courseInfoFragments[i].split("`")[0];
-				} else {
-					courseInfoString += "[";
-					courseInfoString += courseInfoFragments[i];
-				}
-			}
-		}
-		const units = await JSON.parse(courseInfoString);
+		const geminiResponse = await promptGemini(prompt);
+		console.log("created chapters");
+		console.log(geminiResponse);
+
+		const units = await JSON.parse(geminiResponse);
 		console.log("created chapters");
 		const docRef = await addDoc(collection(db, "courses"), {
 			title: title,
@@ -203,21 +246,23 @@ export async function createChapters(title: string, unitsArray: string[]) {
 	}
 }
 
-export async function queryChat(prompt: string, context: string, examples: any[], messages: any[]) {
-	messages.push(
-		{
-			content: prompt
-		}
-	);
+export async function queryChat(
+	prompt: string,
+	context: string,
+	examples: any[],
+	messages: any[]
+) {
+	messages.push({
+		content: prompt,
+	});
 	const response = await fetch(
-		`https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage?key=${process.env.PALM_API}`,
+		`https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage?key=${process.env.GEMINI_API}`,
 		{
 			method: "POST",
 			headers: {
-				'Content-Type': 'application/json',
+				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
-				
 				prompt: {
 					context: context,
 					messages: messages,
@@ -226,60 +271,52 @@ export async function queryChat(prompt: string, context: string, examples: any[]
 				temperature: 0.25,
 				top_k: 40,
 				top_p: 0.95,
-				candidate_count: 1
-			})
-		},
-
-	)
-	
-	const json = await response.json();
-	examples.push(
-		{
-			input: {
-				content: prompt,
-			},
-			output: {
-				content: json.candidates[0].content,
-			}
+				candidate_count: 1,
+			}),
 		}
 	);
-	
-	return [
-		examples,
-		messages
-	]
+
+	const json = await response.json();
+	console.log("QUERYCHAT");
+	console.log(json);
+	examples.push({
+		input: {
+			content: prompt,
+		},
+		output: {
+			content: json.candidates[0].content,
+		},
+	});
+
+	return [examples, messages];
 }
 
-export async function chatBot(prompt: string, context: string, id: string) {
-	const document = await getDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"));
-	let data: any;
+export async function chatBot(
+	prompt: string,
+	chapTitle: string,
+	chapSummary: string,
+	previousMessages: Array<{ content: string, from: "user" | "bot" }>,
+	courseId: string,
+	unitId: number
+) {
+	const course = await getCourse(courseId);
 
-	if (document.exists()) {
-		data = document.data();
-		console.log(data);
-	} else {
-		data = {
-			courseId: "",
-			examples: [],
-			messages: []
-		};
-	}
-	let examples = data.examples;
-	let messages = data.messages;
-	let courseId = data.courseId;
+	prompt =
+		"answer in simple english. THE FOLLOWING IS THE PROMPT: " +
+		prompt +
+		"\nONE TO TWO SENTENCE ANSWER USING THE FOLLOWING CONTEXT USING PLAIN AND SIMPLE ENGLISH. The title of the course is: " +
+		course.title +
+		". The course has the following unit titles and chapters: " +
+		course.units[unitId].title +
+		" with the current chapter on " +
+		chapTitle +
+		" and a summary of " +
+		chapSummary;
 
-	if (id != data.courseId) {
-		courseId = id;
-		examples = [];
-		messages = [];
-	}
-	
-	[examples, messages] = await queryChat(prompt, context, examples, messages)
+	const response = await geminiChatCompletion(
+		prompt,
+		previousMessages
+	);
 
-	const docRef = await setDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"), {
-			courseId: courseId,
-			examples: examples,
-			messages: messages,
-	});
-	return examples;
+	return JSON.parse(response).answer;
 }

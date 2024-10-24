@@ -3,15 +3,18 @@ import {
 	Box,
 	Divider,
 	Input,
+	Button,
 	HStack,
 	Wrap,
+	InputRightElement,
 	InputGroup,
 	InputLeftElement,
 	Icon,
 } from "@chakra-ui/react";
 import { getAllCourses } from "~/models/course.server";
 import { useLoaderData } from "@remix-run/react";
-import GalleryResult from "src/components/GalleryResult";
+import { Form } from "@remix-run/react";
+import GalleryResult from "~/components/GalleryResult";
 import { FaSearch } from "react-icons/fa";
 import { useState } from "react";
 import Fuse from "fuse.js";

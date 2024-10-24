@@ -1,4 +1,4 @@
-import Unit from "../../src/components/Unit";
+import Unit from "../components/Unit";
 import {
 	Box,
 	Heading,
@@ -17,7 +17,7 @@ import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useEffect } from "react";
 import { ActionArgs, json } from "@remix-run/node";
 import { addDoc, collection } from "firebase/firestore";
-import { db } from "src/utils/firebase";
+import { db } from "~/utils/firebase";
 
 export async function action({ request }: ActionArgs) {
 	try {

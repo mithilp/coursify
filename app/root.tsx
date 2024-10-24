@@ -28,7 +28,7 @@ import {
 	useCatch,
 	useNavigation,
 } from "@remix-run/react";
-import theme from "../src/utils/theme";
+import theme from "./utils/theme";
 import { Link as RemixLink } from "@remix-run/react";
 import NProgress from "nprogress";
 import nProgressStyles from "nprogress/nprogress.css";
