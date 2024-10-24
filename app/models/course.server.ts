@@ -81,49 +81,26 @@ export async function promptGemini(prompt: string, json?: boolean) {
 						responseMimeType: "application/json",
 					},
 				}
-				// 	{
-				// 	prompt: {
-				// 		text: prompt,
-				// 	},
-				// 	temperature: 0.9,
-				// 	top_k: 40,
-				// 	top_p: 0.95,
-				// 	candidate_count: 1,
-				// 	max_output_tokens: 2048,
-				// 	stop_sequences: [],
-				// 	safety_settings: [
-				// 		{ category: "HARM_CATEGORY_DEROGATORY", threshold: 3 },
-				// 		{ category: "HARM_CATEGORY_TOXICITY", threshold: 3 },
-				// 		{ category: "HARM_CATEGORY_VIOLENCE", threshold: 3 },
-				// 		{ category: "HARM_CATEGORY_SEXUAL", threshold: 3 },
-				// 		{ category: "HARM_CATEGORY_MEDICAL", threshold: 3 },
-				// 		{ category: "HARM_CATEGORY_DANGEROUS", threshold: 3 },
-				// 	],
-				// }
+
 			),
 		}
 	);
-	// let messages: any[] = [];
-	// let chat: any[] = [];
-	// [ chat, messages ] = await chatBot("how are you", '', chat, messages);
-	// [ chat, messages ] = await chatBot("what is 1+1", '', chat, messages);
-	// console.log("printing");
-	// console.log(chat);
-	// console.log("PaLM api status: ", response.status);
 	const jsonResponse = await response.json();
-	// console.log(jsonResponse.candidates[0].content.parts[0].text);
 	return jsonResponse.candidates[0].content.parts[0].text;
 }
 
 export async function searchYouTube(searchQuery: string) {
 	const response = await fetch(
-		`https://aiotube.deta.dev/search/video/${searchQuery}`,
+		`https://www.googleapis.com/youtube/v3/search?key=${process.env.YOUTUBE_API}&q=${searchQuery}&videoDuration=medium&videoEmbeddable=true&type=video&part=snippet&maxResults=1`,
 		{
 			method: "GET",
 		}
 	);
 	const json = await response.json();
-	return json.id;
+	if (json.items[0] == undefined) {
+		console.log("search yt");
+	}
+	return json.items[0].id.videoId;
 }
 
 export async function getTranscript(videoId: string) {
