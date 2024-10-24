@@ -37,7 +37,7 @@ import { db } from "src/utils/firebase";
 import {
 	getCourse,
 	getTranscript,
-	promptPalm,
+	promptGemini,
 	searchYouTube,
 } from "~/models/course.server";
 
@@ -87,7 +87,7 @@ export const action = async ({ request }: ActionArgs) => {
 			while (!gotSummary) {
 				if (triedSummary < 5) {
 					try {
-						summary = await promptPalm(summaryPrompt);
+						summary = await promptGemini(summaryPrompt);
 						gotSummary = true;
 						console.log("got summary");
 					} catch (error) {
@@ -144,8 +144,8 @@ export const action = async ({ request }: ActionArgs) => {
 			while (!gotQuiz) {
 				if (triedQuiz < 5) {
 					try {
-						let quiz = await promptPalm(quizPrompt);
-						console.log("got palm quiz response");
+						let quiz = await promptGemini(quizPrompt);
+						console.log("got gemini quiz response");
 						const quizFragments = quiz.split("[");
 						let quizString = "";
 						for (const i in quizFragments) {
@@ -414,8 +414,8 @@ export default function FinishCourse() {
 							isErrored
 								? () => navigate("/contact")
 								: allDone
-								? saveAndFinish
-								: generateChapterInfos
+									? saveAndFinish
+									: generateChapterInfos
 						}
 						colorScheme={isErrored ? "red" : allDone ? "green" : "blue"}
 						isLoading={isLoading.length > 0}

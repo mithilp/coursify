@@ -53,33 +53,54 @@ export async function getCourse(id: string): Promise<any> {
 	}
 }
 
-export async function promptPalm(prompt: string) {
+export async function promptGemini(prompt: string, json?: boolean) {
 	const response = await fetch(
-		`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${process.env.PALM_API}`,
+		`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API}`,
 		{
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify({
-				prompt: {
-					text: prompt,
-				},
-				temperature: 0.9,
-				top_k: 40,
-				top_p: 0.95,
-				candidate_count: 1,
-				max_output_tokens: 2048,
-				stop_sequences: [],
-				safety_settings: [
-					{ category: "HARM_CATEGORY_DEROGATORY", threshold: 3 },
-					{ category: "HARM_CATEGORY_TOXICITY", threshold: 3 },
-					{ category: "HARM_CATEGORY_VIOLENCE", threshold: 3 },
-					{ category: "HARM_CATEGORY_SEXUAL", threshold: 3 },
-					{ category: "HARM_CATEGORY_MEDICAL", threshold: 3 },
-					{ category: "HARM_CATEGORY_DANGEROUS", threshold: 3 },
-				],
-			}),
+			body: JSON.stringify(
+				{
+					contents: [
+						{
+							role: "user",
+							parts: [
+								{
+									text: prompt
+								}
+							]
+						}
+					],
+					generationConfig: {
+						temperature: 1,
+						topK: 64,
+						topP: 0.95,
+						maxOutputTokens: 8192,
+						responseMimeType: "application/json"
+					}
+				}
+				// 	{
+				// 	prompt: {
+				// 		text: prompt,
+				// 	},
+				// 	temperature: 0.9,
+				// 	top_k: 40,
+				// 	top_p: 0.95,
+				// 	candidate_count: 1,
+				// 	max_output_tokens: 2048,
+				// 	stop_sequences: [],
+				// 	safety_settings: [
+				// 		{ category: "HARM_CATEGORY_DEROGATORY", threshold: 3 },
+				// 		{ category: "HARM_CATEGORY_TOXICITY", threshold: 3 },
+				// 		{ category: "HARM_CATEGORY_VIOLENCE", threshold: 3 },
+				// 		{ category: "HARM_CATEGORY_SEXUAL", threshold: 3 },
+				// 		{ category: "HARM_CATEGORY_MEDICAL", threshold: 3 },
+				// 		{ category: "HARM_CATEGORY_DANGEROUS", threshold: 3 },
+				// 	],
+				// }
+			),
 		}
 	);
 	// let messages: any[] = [];
@@ -89,8 +110,9 @@ export async function promptPalm(prompt: string) {
 	// console.log("printing");
 	// console.log(chat);
 	// console.log("PaLM api status: ", response.status);
-	const json = await response.json();
-	return json.candidates[0].output;
+	const jsonResponse = await response.json();
+	console.log(jsonResponse.candidates[0].content.parts[0].text);
+	return jsonResponse.candidates[0].content.parts[0].text;
 }
 
 export async function searchYouTube(searchQuery: string) {
@@ -167,22 +189,26 @@ export async function createChapters(title: string, unitsArray: string[]) {
 	`;
 	try {
 		console.log("starting to create chapters");
-		let palmResponse = await promptPalm(prompt);
-		const courseInfoFragments = palmResponse.split("[");
-		let courseInfoString = "";
-		for (const i in courseInfoFragments) {
-			if (Number(i) === 0) {
-			} else {
-				if (Number(i) == courseInfoFragments.length - 1) {
-					courseInfoString += "[";
-					courseInfoString += courseInfoFragments[i].split("`")[0];
-				} else {
-					courseInfoString += "[";
-					courseInfoString += courseInfoFragments[i];
-				}
-			}
-		}
-		const units = await JSON.parse(courseInfoString);
+		const geminiResponse = await promptGemini(prompt);
+		console.log("created chapters");
+		console.log(geminiResponse);
+
+
+		// const courseInfoFragments = geminiResponse.split("[");
+		// let courseInfoString = "";
+		// for (const i in courseInfoFragments) {
+		// 	if (Number(i) === 0) {
+		// 	} else {
+		// 		if (Number(i) == courseInfoFragments.length - 1) {
+		// 			courseInfoString += "[";
+		// 			courseInfoString += courseInfoFragments[i].split("`")[0];
+		// 		} else {
+		// 			courseInfoString += "[";
+		// 			courseInfoString += courseInfoFragments[i];
+		// 		}
+		// 	}
+		// }
+		const units = await JSON.parse(geminiResponse);
 		console.log("created chapters");
 		const docRef = await addDoc(collection(db, "courses"), {
 			title: title,
@@ -210,14 +236,14 @@ export async function queryChat(prompt: string, context: string, examples: any[]
 		}
 	);
 	const response = await fetch(
-		`https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage?key=${process.env.PALM_API}`,
+		`https://generativelanguage.googleapis.com/v1beta2/models/chat-bison-001:generateMessage?key=${process.env.GEMINI_API}`,
 		{
 			method: "POST",
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
-				
+
 				prompt: {
 					context: context,
 					messages: messages,
@@ -231,7 +257,7 @@ export async function queryChat(prompt: string, context: string, examples: any[]
 		},
 
 	)
-	
+
 	const json = await response.json();
 	examples.push(
 		{
@@ -243,7 +269,7 @@ export async function queryChat(prompt: string, context: string, examples: any[]
 			}
 		}
 	);
-	
+
 	return [
 		examples,
 		messages
@@ -273,13 +299,13 @@ export async function chatBot(prompt: string, context: string, id: string) {
 		examples = [];
 		messages = [];
 	}
-	
+
 	[examples, messages] = await queryChat(prompt, context, examples, messages)
 
 	const docRef = await setDoc(doc(db, "chat", "MfmN5BhbPpaLzBuNjV9l"), {
-			courseId: courseId,
-			examples: examples,
-			messages: messages,
+		courseId: courseId,
+		examples: examples,
+		messages: messages,
 	});
 	return examples;
 }
