@@ -16,7 +16,7 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { userId } = useAuth();
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
 
   // Profile URL that uses the user's ID
   const profileUrl = userId ? `/user/${userId}` : "/profile";
@@ -79,7 +79,10 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
               >
                 Profile
               </Link>
-              <UserButton />
+              <div className="relative flex items-center justify-center">
+                {!isLoaded && <div className="w-[28px] h-[28px]"></div>}
+                <UserButton />
+              </div>
             </>
           ) : (
             <>
@@ -154,7 +157,10 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
                   <div className="text-sm text-muted-foreground mb-2">
                     Account
                   </div>
-                  <div onClick={closeMobileMenu}>
+                  <div onClick={closeMobileMenu} className="relative">
+                    {!isLoaded && (
+                      <div className="w-8 h-8 rounded-full bg-muted animate-pulse absolute"></div>
+                    )}
                     <UserButton />
                   </div>
                 </div>
