@@ -37,9 +37,9 @@ import {
   finishCourseGeneration,
   updateCourse,
 } from "./actions";
-import { GeneratedCourse } from "@/app/lib/schemas";
+import { CourseDB } from "@/app/lib/schemas";
 
-// Types
+// Types for UI component usage
 interface Chapter {
   id: string;
   title: string;
@@ -54,19 +54,17 @@ interface Unit {
   chapters: Chapter[];
 }
 
-interface CourseWithMetadata extends GeneratedCourse {
-  id: string;
-}
-
 interface CourseEditorProps {
-  course: CourseWithMetadata;
+  course: CourseDB;
 }
 
 // Example course data for editing (will be replaced with API fetch in a real app)
-const exampleCourse: CourseWithMetadata = {
+const exampleCourse: CourseDB = {
   id: "workplace-narcissism",
   courseTopic: "Understanding Workplace Narcissism",
   isPublic: true,
+  loading: false,
+  published: false,
   units: [
     {
       id: "unit-1",
@@ -108,7 +106,7 @@ const exampleCourse: CourseWithMetadata = {
 };
 
 export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
-  const [course, setCourse] = useState<CourseWithMetadata>(initialCourse);
+  const [course, setCourse] = useState<CourseDB>(initialCourse);
 
   const [expandedUnits, setExpandedUnits] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -294,45 +292,13 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
       })),
     }));
 
-    startTransition(async () => {
-      try {
-        // Call server action to process all chapters
-        const result = await generateFullCourse(course.id);
-
-        // Update chapter statuses based on results
-        setCourse((prev) => ({
-          ...prev,
-          units: prev.units.map((unit) => ({
-            ...unit,
-            chapters: unit.chapters.map((chapter) => {
-              const chapterResult = result.chapterResults.find(
-                (r: { chapterId: string }) => r.chapterId === chapter.id
-              );
-
-              return {
-                ...chapter,
-                status: chapterResult?.success ? "success" : "error",
-              };
-            }),
-          })),
-        }));
-
-        if (result.success) {
-          // Add a small delay to show success states before redirecting
-          setTimeout(async () => {
-            await finishCourseGeneration(course.id);
-          }, 1000);
-        } else {
-          // If full generation failed, keep the UI in the generated state
-          // so user can see which chapters failed
-          // They can retry by clicking the button again
-          setIsGenerating(false);
-        }
-      } catch (error) {
-        console.error("Course generation failed:", error);
-        setIsGenerating(false);
-      }
+    // Start generation in the background without awaiting
+    startTransition(() => {
+      generateFullCourse(course.id);
     });
+
+    // Immediately redirect to confirm page without waiting
+    window.location.href = `/create/${course.id}/confirm`;
   };
 
   // Find unit title by ID

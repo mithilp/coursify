@@ -1,7 +1,7 @@
 // This is a Server Component
 import { redirect } from "next/navigation";
-import { getCourse } from "./actions";
-import { CourseEditor } from "./CourseEditor";
+import { getCourse } from "../actions";
+import { CourseConfirmation } from "./CourseConfirmation";
 
 interface PageParams {
   params: {
@@ -9,7 +9,7 @@ interface PageParams {
   };
 }
 
-export default async function CourseEditPage({ params }: PageParams) {
+export default async function CourseConfirmPage({ params }: PageParams) {
   const courseId = (await params).courseId;
 
   // If courseId is "new", redirect to home to create a course
@@ -25,5 +25,5 @@ export default async function CourseEditPage({ params }: PageParams) {
     redirect("/");
   }
 
-  return <CourseEditor course={result.course} />;
+  return <CourseConfirmation course={result.course} />;
 }
