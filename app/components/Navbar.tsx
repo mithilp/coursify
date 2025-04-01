@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useAuth, useUser } from "@clerk/nextjs";
 import { BookOpen, PlusCircle, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,11 @@ interface NavbarProps {
 export default function Navbar({ isSignedIn }: NavbarProps) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { userId } = useAuth();
+  const { user } = useUser();
+
+  // Profile URL that uses the user's ID
+  const profileUrl = userId ? `/user/${userId}` : "/profile";
 
   const isActive = (path: string) => {
     return pathname === path
@@ -68,7 +73,13 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
               >
                 Dashboard
               </Link>
-              <UserButton afterSignOutUrl="/" />
+              <Link
+                href={profileUrl}
+                className={`text-sm ${isActive(profileUrl)}`}
+              >
+                Profile
+              </Link>
+              <UserButton />
             </>
           ) : (
             <>
@@ -132,12 +143,19 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
                 >
                   Dashboard
                 </Link>
+                <Link
+                  href={profileUrl}
+                  className={`text-base ${isActive(profileUrl)}`}
+                  onClick={closeMobileMenu}
+                >
+                  Profile
+                </Link>
                 <div className="py-2">
                   <div className="text-sm text-muted-foreground mb-2">
                     Account
                   </div>
                   <div onClick={closeMobileMenu}>
-                    <UserButton afterSignOutUrl="/" />
+                    <UserButton />
                   </div>
                 </div>
               </>

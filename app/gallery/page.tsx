@@ -1,5 +1,60 @@
+"use client";
+
 import { BookCopy } from "lucide-react";
-import Link from "next/link";
+import CourseCard from "../components/CourseCard";
+
+// Types
+type CourseCreator = {
+  userId: string;
+  name: string;
+};
+
+type Course = {
+  id: string;
+  title: string;
+  createdBy: CourseCreator;
+  units: any[];
+  shortDescription?: string;
+  views?: number;
+};
+
+// Dummy data - in a real app, this would come from an API
+const courses: Course[] = [
+  {
+    id: "workplace-narcissism",
+    title: "Understanding Workplace Narcissism",
+    shortDescription:
+      "Learn to identify and manage narcissistic behaviors in professional settings",
+    createdBy: {
+      userId: "sarah-johnson",
+      name: "Dr. Sarah Johnson",
+    },
+    units: [],
+    views: 342,
+  },
+  {
+    id: "python-intro",
+    title: "Introduction to Python",
+    shortDescription: "Learn Python programming from scratch",
+    createdBy: {
+      userId: "demo-user",
+      name: "Demo User",
+    },
+    units: [],
+    views: 189,
+  },
+  {
+    id: "calculus-101",
+    title: "Calculus 101",
+    shortDescription: "Master the fundamentals of calculus",
+    createdBy: {
+      userId: "demo-user",
+      name: "Demo User",
+    },
+    units: [],
+    views: 127,
+  },
+];
 
 export default function GalleryPage() {
   return (
@@ -13,41 +68,17 @@ export default function GalleryPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Link
-          href="/course/workplace-narcissism"
-          className="border rounded-lg p-6 hover:shadow-md transition-shadow"
-        >
-          <h2 className="font-bold text-xl mb-2">
-            Understanding Workplace Narcissism
-          </h2>
-          <p className="text-muted-foreground mb-4">
-            Learn to identify and manage narcissistic behaviors in professional
-            settings
-          </p>
-          <div className="text-sm text-muted-foreground">
-            3 units • 10 chapters
-          </div>
-        </Link>
-
-        <div className="border rounded-lg p-6 hover:shadow-md transition-shadow">
-          <h2 className="font-bold text-xl mb-2">Introduction to Python</h2>
-          <p className="text-muted-foreground mb-4">
-            Learn Python programming from scratch
-          </p>
-          <div className="text-sm text-muted-foreground">
-            5 units • Created by Demo User
-          </div>
-        </div>
-
-        <div className="border rounded-lg p-6 hover:shadow-md transition-shadow">
-          <h2 className="font-bold text-xl mb-2">Calculus 101</h2>
-          <p className="text-muted-foreground mb-4">
-            Master the fundamentals of calculus
-          </p>
-          <div className="text-sm text-muted-foreground">
-            4 units • Created by Demo User
-          </div>
-        </div>
+        {courses.map((course) => (
+          <CourseCard
+            key={course.id}
+            id={course.id}
+            title={course.title}
+            shortDescription={course.shortDescription}
+            createdBy={course.createdBy}
+            units={course.units}
+            views={course.views}
+          />
+        ))}
       </div>
     </div>
   );

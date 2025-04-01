@@ -7,13 +7,26 @@ import { Button } from "@/components/ui/button";
 import CourseSidebar from "./CourseSidebar";
 import InteractionsSidebar from "./InteractionsSidebar";
 import ChapterContent from "./ChapterContent";
+import Link from "next/link";
 
 // Types for our dummy data
+type Question = {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+};
+
+type Quiz = {
+  title: string;
+  questions: Question[];
+};
+
 type Chapter = {
   id: string;
   title: string;
   videoUrl: string;
   summary: string;
+  quiz: Quiz;
 };
 
 type Unit = {
@@ -23,9 +36,15 @@ type Unit = {
   chapters: Chapter[];
 };
 
+type CourseCreator = {
+  userId: string;
+  name: string;
+};
+
 type Course = {
   id: string;
   title: string;
+  createdBy: CourseCreator;
   units: Unit[];
 };
 
@@ -33,6 +52,10 @@ type Course = {
 const dummyCourse: Course = {
   id: "workplace-narcissism",
   title: "Understanding Workplace Narcissism",
+  createdBy: {
+    userId: "sarah-johnson",
+    name: "Dr. Sarah Johnson",
+  },
   units: [
     {
       id: "unit-1",
@@ -46,6 +69,22 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "Narcissism, in its clinical sense as Narcissistic Personality Disorder (NPD), is a personality disorder characterized by a pervasive pattern of grandiosity, a need for admiration, and a lack of empathy. Individuals with NPD exhibit an inflated sense of self-importance, believing they are superior to others and deserving of special treatment. They often exaggerate their achievements and talents, and expect to be recognized as superior without commensurate achievements. This grandiosity masks a fragile self-esteem, easily threatened by criticism or perceived slights. They may exploit others to achieve their own ends, lacking genuine empathy for their feelings. The diagnosis of NPD involves a comprehensive assessment by a mental health professional, considering various behavioral patterns and their impact on the individual's life and relationships. Important distinctions exist between normal narcissism (self-esteem) and the clinically diagnosed NPD, which represents a significant impairment in social and occupational functioning. Treatment options include psychotherapy, focusing on addressing underlying insecurities and maladaptive behaviors.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question:
+                  "Which of the following is NOT a core characteristic of Narcissistic Personality Disorder (NPD)?",
+                options: [
+                  "A pervasive pattern of grandiosity",
+                  "A lack of empathy",
+                  "Excessive humility and self-deprecation",
+                  "A need for admiration",
+                ],
+                correctAnswer: 2,
+              },
+            ],
+          },
         },
         {
           id: "symptoms-diagnosis",
@@ -53,6 +92,22 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "This chapter covers the key symptoms and diagnostic criteria for Narcissistic Personality Disorder. We explore the nine official diagnostic criteria from the DSM-5, including grandiose sense of self-importance, preoccupation with fantasies of success, belief in being 'special,' excessive admiration needs, sense of entitlement, interpersonal exploitation, lack of empathy, envy of others, and arrogant behaviors. The chapter explains how mental health professionals distinguish NPD from other conditions and personality traits, the challenges in diagnosis, and the importance of comprehensive psychological assessment.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question:
+                  "Individuals with NPD often demonstrate a fragile self-esteem. How is this typically manifested?",
+                options: [
+                  "Openly expressing their insecurities",
+                  "Seeking constant validation from others",
+                  "Showing empathy for others' vulnerabilities",
+                  "Demonstrating humility and self-awareness",
+                ],
+                correctAnswer: 1,
+              },
+            ],
+          },
         },
         {
           id: "levels-narcissism",
@@ -60,6 +115,22 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "This chapter explains the spectrum of narcissistic traits from healthy self-esteem to pathological narcissism. We examine the continuum of narcissistic expression, from normal self-confidence necessary for healthy functioning, through subclinical narcissistic traits, to full Narcissistic Personality Disorder. The chapter differentiates between grandiose and vulnerable narcissism, discusses cultural influences on narcissistic expression, and explains how narcissistic traits can fluctuate based on life circumstances and environmental factors.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question:
+                  "What is the key difference between normal narcissism and NPD?",
+                options: [
+                  "There is no significant difference; they are essentially the same.",
+                  "Normal narcissism involves seeking admiration, while NPD does not.",
+                  "NPD involves significant impairment in social and occupational functioning.",
+                  "Normal narcissism is healthier; NPD is always harmful.",
+                ],
+                correctAnswer: 2,
+              },
+            ],
+          },
         },
       ],
     },
@@ -75,6 +146,22 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "This chapter explores how narcissistic behavior affects personal and professional relationships. We examine typical relationship patterns involving narcissistic individuals, including initial idealization followed by devaluation, the cycle of narcissistic abuse, and the challenges in maintaining healthy boundaries. The chapter discusses specific effects on romantic partners, family members, friends, and colleagues, and identifies common emotional responses from those in relationship with narcissistic individuals.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question:
+                  "What is a common pattern in relationships with narcissistic individuals?",
+                options: [
+                  "Initial idealization followed by devaluation",
+                  "Consistent emotional support",
+                  "Open communication",
+                  "Mutual respect",
+                ],
+                correctAnswer: 0,
+              },
+            ],
+          },
         },
         {
           id: "narcissism-workplace",
@@ -82,6 +169,22 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "This chapter examines how narcissistic traits manifest in workplace settings and their effect on teams. We analyze typical behaviors of narcissistic colleagues, managers, and employees, including credit-taking, blame-shifting, competitive undermining, and resistance to feedback. The chapter discusses the impact on team cohesion, organizational culture, productivity, and employee wellbeing, as well as the particular challenges of managing, working with, or working for individuals with strong narcissistic traits.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question:
+                  "Which of these is NOT a typical behavior of narcissistic individuals in the workplace?",
+                options: [
+                  "Taking credit for others' work",
+                  "Sharing success with team members",
+                  "Resisting feedback",
+                  "Blame-shifting",
+                ],
+                correctAnswer: 1,
+              },
+            ],
+          },
         },
         {
           id: "psychological-effects",
@@ -89,6 +192,22 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "This chapter details the psychological impact of being subjected to narcissistic abuse over time. We examine common emotional and psychological effects, including anxiety, depression, diminished self-esteem, confusion and self-doubt, hypervigilance, and symptoms of trauma. The chapter explains concepts like gaslighting, trauma bonding, and cognitive dissonance in the context of narcissistic relationships, and discusses the cumulative impact of narcissistic abuse on an individual's identity, worldview, and mental health.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question:
+                  "What is gaslighting in the context of narcissistic abuse?",
+                options: [
+                  "A form of physical abuse",
+                  "A manipulation tactic that makes victims doubt their reality",
+                  "A type of therapy",
+                  "A legal term",
+                ],
+                correctAnswer: 1,
+              },
+            ],
+          },
         },
       ],
     },
@@ -104,6 +223,22 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "This chapter provides practical techniques for establishing and maintaining healthy boundaries with narcissistic individuals. We explore the importance of boundary-setting, common boundary violations by narcissistic individuals, and specific strategies for defining, communicating, and enforcing personal limits. The chapter offers techniques for managing emotional responses during boundary violations, language templates for assertive communication, and methods for maintaining consistency in boundary enforcement.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question:
+                  "What is the first step in setting boundaries with a narcissistic individual?",
+                options: [
+                  "Identifying your personal limits",
+                  "Confronting them aggressively",
+                  "Ignoring their behavior",
+                  "Seeking revenge",
+                ],
+                correctAnswer: 0,
+              },
+            ],
+          },
         },
         {
           id: "communication-techniques",
@@ -111,6 +246,21 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "This chapter covers specific communication strategies to use when dealing with narcissistic behaviors. We examine techniques like the 'gray rock' method, strategic disengagement, managed emotional responses, and objective language patterns. The chapter provides guidance on framing conversations to minimize defensive reactions, using validation strategically, focusing on problem-solving rather than blame, and maintaining clarity and documentation in professional contexts.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question: "What is the 'gray rock' method?",
+                options: [
+                  "A form of physical defense",
+                  "A communication technique that makes you appear uninteresting",
+                  "A type of therapy",
+                  "A legal strategy",
+                ],
+                correctAnswer: 1,
+              },
+            ],
+          },
         },
         {
           id: "protecting-from-manipulation",
@@ -118,6 +268,22 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "This chapter offers methods to recognize and protect against common manipulation tactics. We identify typical manipulation strategies used by narcissistic individuals, including gaslighting, emotional blackmail, triangulation, and guilt induction. The chapter provides techniques for maintaining reality-testing, building a support network of objective observers, documenting interactions when necessary, and recognizing emotional triggers that increase vulnerability to manipulation.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question:
+                  "What is triangulation in the context of narcissistic manipulation?",
+                options: [
+                  "A geometric concept",
+                  "A form of physical abuse",
+                  "A manipulation tactic involving three people",
+                  "A type of therapy",
+                ],
+                correctAnswer: 2,
+              },
+            ],
+          },
         },
         {
           id: "seeking-help",
@@ -125,62 +291,26 @@ const dummyCourse: Course = {
           videoUrl: "https://www.youtube.com/embed/wKXSK5jVPu0",
           summary:
             "This chapter discusses when and how to seek professional support when dealing with narcissistic individuals. We examine indicators that professional help may be needed, types of helpful therapeutic approaches for those affected by narcissistic relationships, considerations when selecting a therapist familiar with narcissistic abuse, and additional resources like support groups, books, and online communities. The chapter also offers guidance on self-care practices that complement professional support.",
+          quiz: {
+            title: "Knowledge Check",
+            questions: [
+              {
+                question:
+                  "When should you consider seeking professional help for dealing with a narcissistic individual?",
+                options: [
+                  "Only after physical abuse occurs",
+                  "When you feel overwhelmed or unable to cope",
+                  "Never",
+                  "Only if they agree to therapy",
+                ],
+                correctAnswer: 1,
+              },
+            ],
+          },
         },
       ],
     },
   ],
-};
-
-// Dummy quizzes for each chapter
-const dummyQuizzes = {
-  "defining-narcissism": {
-    title: "Knowledge Check",
-    questions: [
-      {
-        question:
-          "Which of the following is NOT a core characteristic of Narcissistic Personality Disorder (NPD)?",
-        options: [
-          "A pervasive pattern of grandiosity",
-          "A lack of empathy",
-          "Excessive humility and self-deprecation",
-          "A need for admiration",
-        ],
-        correctAnswer: 2,
-      },
-    ],
-  },
-  "symptoms-diagnosis": {
-    title: "Knowledge Check",
-    questions: [
-      {
-        question:
-          "Individuals with NPD often demonstrate a fragile self-esteem. How is this typically manifested?",
-        options: [
-          "Openly expressing their insecurities",
-          "Seeking constant validation from others",
-          "Showing empathy for others' vulnerabilities",
-          "Demonstrating humility and self-awareness",
-        ],
-        correctAnswer: 1,
-      },
-    ],
-  },
-  "levels-narcissism": {
-    title: "Knowledge Check",
-    questions: [
-      {
-        question:
-          "What is the key difference between normal narcissism and NPD?",
-        options: [
-          "There is no significant difference; they are essentially the same.",
-          "Normal narcissism involves seeking admiration, while NPD does not.",
-          "NPD involves significant impairment in social and occupational functioning.",
-          "Normal narcissism is healthier; NPD is always harmful.",
-        ],
-        correctAnswer: 2,
-      },
-    ],
-  },
 };
 
 interface CourseClientPageProps {
@@ -265,6 +395,15 @@ export function CourseClientPage({
             </Button>
           </div>
           <div className="overflow-y-auto flex-1">
+            <div className="p-4 border-b">
+              <h2 className="font-medium">{course.title}</h2>
+              <Link
+                href={`/user/${course.createdBy.userId}`}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                Created by {course.createdBy.name}
+              </Link>
+            </div>
             <CourseSidebar
               course={course}
               currentUnitId={currentUnitId}
@@ -312,11 +451,7 @@ export function CourseClientPage({
               </Button>
             </div>
             <div className="overflow-y-auto flex-1">
-              <InteractionsSidebar
-                quiz={
-                  dummyQuizzes[currentChapterId as keyof typeof dummyQuizzes]
-                }
-              />
+              <InteractionsSidebar quiz={currentChapter.quiz} />
             </div>
           </div>
           {/* Backdrop for mobile */}
