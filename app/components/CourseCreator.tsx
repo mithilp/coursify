@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
-  generateCourse,
+  generateChapters,
   saveCourseToFirebase,
 } from "@/app/actions/courseActions";
 import { CourseUnitInput } from "@/app/lib/schemas";
@@ -100,7 +100,7 @@ export default function CourseCreator({ isSignedIn }: CourseCreatorProps) {
 
     try {
       // Generate the course content
-      const courseData = await generateCourse(courseTopic, courseUnits);
+      const courseData = await generateChapters(courseTopic, courseUnits);
 
       // Save to Firebase
       const result = await saveCourseToFirebase(courseData);

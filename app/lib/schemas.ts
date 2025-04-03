@@ -38,6 +38,18 @@ export const courseSchema = z.object({
 // DATABASE TYPES
 // ---------------------
 
+// Quiz types
+export interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+}
+
+export interface Quiz {
+  title: string;
+  questions: QuizQuestion[];
+}
+
 // Database chapter type with additional fields
 export interface ChapterDB {
   id: string;
@@ -47,6 +59,8 @@ export interface ChapterDB {
   loading?: boolean;
   views?: number;
   status?: "idle" | "loading" | "success" | "error";
+  videoId?: string; // YouTube video ID
+  quiz?: Quiz; // Quiz data
 }
 
 // Database unit type

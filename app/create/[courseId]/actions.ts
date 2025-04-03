@@ -1,12 +1,13 @@
 "use server";
 
+import { YoutubeTranscript } from "youtube-transcript";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/app/utils/firebase";
 import { doc, getDoc, collection, setDoc, updateDoc } from "firebase/firestore";
-import { GeneratedCourse, CourseDB } from "@/app/lib/schemas";
+import { GeneratedCourse, CourseDB, Quiz, QuizQuestion } from "@/app/lib/schemas";
 
 // Get course data from Firebase
 export async function getCourse(courseId: string) {
@@ -180,6 +181,120 @@ export async function generateFullCourse(courseId: string) {
   }
 }
 
+async function searchYouTubeVideo(query: string): Promise<string | null> {
+  try {
+    // Clean and prepare the search query
+    const cleanQuery = query
+      .replace(/[^\w\s]/g, '') // Remove special characters
+      .trim()
+      .split(' ')
+      .filter(word => word.length > 2) // Remove short words
+      .join(' ');
+
+    console.debug(`Searching YouTube for: "${cleanQuery}"`);
+
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(
+        cleanQuery
+      )}&type=video&key=${process.env.YOUTUBE_API}&maxResults=5&videoDuration=any&videoEmbeddable=true&relevanceLanguage=en`
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('YouTube API Error:', errorData);
+      throw new Error(`YouTube API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.debug(`YouTube search results count: ${data.items?.length || 0}`);
+
+    if (data.items && data.items.length > 0) {
+      // Try to find the most relevant video
+      const video = data.items.find((item: any) => {
+        const title = item.snippet.title.toLowerCase();
+        const description = item.snippet.description.toLowerCase();
+        const queryWords = cleanQuery.toLowerCase().split(' ');
+        
+        // Check if title or description contains most of the query words
+        const matchingWords = queryWords.filter(word => 
+          title.includes(word) || description.includes(word)
+        );
+        
+        return matchingWords.length >= Math.ceil(queryWords.length * 0.5); // At least 50% match
+      }) || data.items[0]; // Fallback to first result if no good match
+
+      console.debug(`Selected video: ${video.snippet.title}`);
+      return video.id.videoId;
+    }
+
+    console.warn('No videos found for query:', cleanQuery);
+    return null;
+  } catch (error) {
+    console.error("Error searching YouTube:", error);
+    return null;
+  }
+}
+
+export async function getYoutubeTranscript(videoId: string) {
+  try {
+    const transcriptArr = await YoutubeTranscript.fetchTranscript(videoId, {
+      lang: "en",
+    });
+    const transcript = transcriptArr
+      .map((entry) => entry.text)
+      .join(" ")
+      .replaceAll("\n", " ");
+    return { transcript, success: true };
+  } catch (e) {
+    console.error("Error fetching transcript:", e);
+    return { transcript: "", success: false };
+  }
+}
+
+async function generateQuizFromTranscript(transcript: string, chapterTitle: string): Promise<Quiz> {
+  try {
+    const prompt = `Create a quiz based on the following video transcript. The quiz should have 5 multiple-choice questions with 4 options each. Each question should test understanding of key concepts from the transcript. The correct answer should be clearly indicated.
+
+Transcript: ${transcript}
+
+Chapter Title: ${chapterTitle}
+
+Format the response as a JSON object with the following structure:
+{
+  "title": "Knowledge Check",
+  "questions": [
+    {
+      "question": "Question text",
+      "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+      "correctAnswer": 0
+    }
+  ]
+}`;
+
+    const { text } = await generateText({
+      model: google("gemini-2.0-flash-001"),
+      prompt,
+    });
+
+    // Parse the JSON response
+    const quizData = JSON.parse(text);
+    return quizData as Quiz;
+  } catch (error) {
+    console.error("Error generating quiz:", error);
+    // Return a default quiz if generation fails
+    return {
+      title: "Knowledge Check",
+      questions: [
+        {
+          question: "What is the main topic discussed in this chapter?",
+          options: ["Option A", "Option B", "Option C", "Option D"],
+          correctAnswer: 0,
+        },
+      ],
+    };
+  }
+}
+
 // Process a single chapter with a random delay
 async function processChapter(
   courseId: string,
@@ -227,12 +342,41 @@ async function processChapter(
       updatedAt: new Date().toISOString(),
     });
 
-    // Random delay between 1-5 seconds
-    const delay = Math.floor(Math.random() * 4000) + 1000;
-    await new Promise((resolve) => setTimeout(resolve, delay));
+    // Find the chapter to process
+    const chapter = courseData.units
+      .find((unit) => unit.id === unitId)
+      ?.chapters.find((chapter) => chapter.id === chapterId);
 
-    // Generate fake content (in a real app, this would call the AI)
-    const content = `This is generated content for chapter ${chapterId} in unit ${unitId}. It was generated after a ${delay}ms delay.`;
+    if (!chapter) {
+      throw new Error("Chapter not found");
+    }
+
+    // Search for relevant YouTube video
+    let videoId = await searchYouTubeVideo(chapter.title);
+    
+    if (!videoId) {
+      // Instead of throwing an error, we'll try a more generic search
+      console.warn(`No video found for "${chapter.title}", trying with course topic`);
+      const courseTopic = courseData.courseTopic;
+      videoId = await searchYouTubeVideo(`${courseTopic} ${chapter.title}`);
+      
+      if (!videoId) {
+        console.error(`No video found for chapter "${chapter.title}" in course "${courseTopic}"`);
+        // Instead of failing, we'll continue with a default video ID
+        // You might want to use a placeholder video or handle this differently
+        return { success: false, chapterId, error: "No suitable video found" };
+      }
+    }
+
+    // Get transcript from YouTube video
+    const { transcript, success: successTranscript } = await getYoutubeTranscript(videoId);
+    
+    if (!successTranscript) {
+      throw new Error("Failed to get video transcript");
+    }
+
+    // Generate quiz from transcript
+    const quiz = await generateQuizFromTranscript(transcript, chapter.title);
 
     // Update the units with the content and set loading to false
     const finalUnits = courseData.units.map((unit) => {
@@ -241,7 +385,8 @@ async function processChapter(
           if (chapter.id === chapterId) {
             return {
               ...chapter,
-              content: content,
+              videoId,
+              quiz,
               loading: false,
             };
           }

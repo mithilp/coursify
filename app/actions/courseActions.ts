@@ -10,7 +10,7 @@ import { revalidatePath } from "next/cache";
 /**
  * Server action to generate course content with AI
  */
-export async function generateCourse(
+export async function generateChapters(
   courseTopic: string,
   courseUnits: CourseUnitInput[]
 ) {
