@@ -271,10 +271,15 @@ Format the response as a JSON object with the following structure:
   ]
 }`;
 
-    const { text } = await generateText({
+    let { text } = await generateText({
       model: google("gemini-2.0-flash-001"),
       prompt,
     });
+
+    // Extract just the JSON portion from the text
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}') + 1;
+    text = text.slice(jsonStart, jsonEnd);
 
     // Parse the JSON response
     const quizData = JSON.parse(text);
