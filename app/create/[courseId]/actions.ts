@@ -328,7 +328,7 @@ async function processChapter(
           if (chapter.id === chapterId) {
             return {
               ...chapter,
-              loading: true,
+              status: "loading",
             };
           }
           return chapter;
@@ -358,7 +358,6 @@ async function processChapter(
 
     // Search for relevant YouTube video
     let videoId = await searchYouTubeVideo(chapter.title);
-    
     if (!videoId) {
       // Instead of throwing an error, we'll try a more generic search
       console.warn(`No video found for "${chapter.title}", trying with course topic`);
@@ -367,23 +366,69 @@ async function processChapter(
       
       if (!videoId) {
         console.error(`No video found for chapter "${chapter.title}" in course "${courseTopic}"`);
-        // Instead of failing, we'll continue with a default video ID
-        // You might want to use a placeholder video or handle this differently
+        // Update chapter status to error
+        const errorUnits = courseData.units.map((unit) => {
+          if (unit.id === unitId) {
+            const updatedChapters = unit.chapters.map((chapter) => {
+              if (chapter.id === chapterId) {
+                return {
+                  ...chapter,
+                  status: "error",
+                };
+              }
+              return chapter;
+            });
+            return {
+              ...unit,
+              chapters: updatedChapters,
+            };
+          }
+          return unit;
+        });
+
+        await updateDoc(courseRef, {
+          units: errorUnits,
+          updatedAt: new Date().toISOString(),
+        });
+
         return { success: false, chapterId, error: "No suitable video found" };
       }
     }
 
     // Get transcript from YouTube video
     const { transcript, success: successTranscript } = await getYoutubeTranscript(videoId);
-    
     if (!successTranscript) {
+      // Update chapter status to error
+      const errorUnits = courseData.units.map((unit) => {
+        if (unit.id === unitId) {
+          const updatedChapters = unit.chapters.map((chapter) => {
+            if (chapter.id === chapterId) {
+              return {
+                ...chapter,
+                status: "error",
+              };
+            }
+            return chapter;
+          });
+          return {
+            ...unit,
+            chapters: updatedChapters,
+          };
+        }
+        return unit;
+      });
+
+      await updateDoc(courseRef, {
+        units: errorUnits,
+        updatedAt: new Date().toISOString(),
+      });
+
       throw new Error("Failed to get video transcript");
     }
 
     // Generate quiz from transcript
     const quiz = await generateQuizFromTranscript(transcript, chapter.title);
-
-    // Update the units with the content and set loading to false
+    // Update the units with the content and set status to success
     const finalUnits = courseData.units.map((unit) => {
       if (unit.id === unitId) {
         const updatedChapters = unit.chapters.map((chapter) => {
@@ -392,7 +437,7 @@ async function processChapter(
               ...chapter,
               videoId,
               quiz,
-              loading: false,
+              status: "success",
             };
           }
           return chapter;
@@ -402,8 +447,10 @@ async function processChapter(
           chapters: updatedChapters,
         };
       }
+      
       return unit;
     });
+    console.log("FINAL UNITS: ", finalUnits);
 
     // Update course in Firebase
     await updateDoc(courseRef, {
@@ -417,6 +464,37 @@ async function processChapter(
     return { success: true, chapterId };
   } catch (error) {
     console.error(`Error generating chapter ${chapterId}:`, error);
+    
+    // Update chapter status to error
+    const courseRef = doc(db, "courses", courseId);
+    const courseSnap = await getDoc(courseRef);
+    if (courseSnap.exists()) {
+      const courseData = courseSnap.data() as GeneratedCourse;
+      const errorUnits = courseData.units.map((unit) => {
+        if (unit.id === unitId) {
+          const updatedChapters = unit.chapters.map((chapter) => {
+            if (chapter.id === chapterId) {
+              return {
+                ...chapter,
+                status: "error",
+              };
+            }
+            return chapter;
+          });
+          return {
+            ...unit,
+            chapters: updatedChapters,
+          };
+        }
+        return unit;
+      });
+
+      await updateDoc(courseRef, {
+        units: errorUnits,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
     return { success: false, chapterId, error: (error as Error).message };
   }
 }

@@ -38,6 +38,8 @@ import {
   updateCourse,
 } from "./actions";
 import { CourseDB } from "@/app/lib/schemas";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/app/utils/firebase";
 
 // Types for UI component usage
 interface Chapter {
@@ -105,6 +107,14 @@ const exampleCourse: CourseDB = {
   ],
 };
 
+// Add these styles to your existing styles
+const chapterStatusStyles = {
+  idle: "bg-background",
+  loading: "bg-muted animate-pulse",
+  success: "bg-green-50 border-green-200",
+  error: "bg-red-50 border-red-200",
+};
+
 export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
   const [course, setCourse] = useState<CourseDB>(initialCourse);
 
@@ -120,6 +130,19 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
   useEffect(() => {
     setExpandedUnits(initialCourse.units.map((unit) => unit.id));
   }, [initialCourse]);
+
+  // Add this effect to listen for real-time updates
+  useEffect(() => {
+    const courseRef = doc(db, "courses", course.id);
+    const unsubscribe = onSnapshot(courseRef, (doc) => {
+      if (doc.exists()) {
+        const updatedCourse = doc.data() as CourseDB;
+        setCourse(updatedCourse);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [course.id]);
 
   // Update course title
   const updateCourseTitle = (title: string) => {
@@ -307,6 +330,48 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
     return unit?.title || `Unit ${unitId}`;
   };
 
+  // Update the chapter rendering in your JSX
+  const renderChapter = (chapter: Chapter, unitId: string) => {
+    const status = chapter.status || "idle";
+    return (
+      <div
+        key={chapter.id}
+        className={`p-3 rounded-md border ${chapterStatusStyles[status]} transition-colors duration-300`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <Input
+              value={chapter.title}
+              onChange={(e) =>
+                updateChapterTitle(unitId, chapter.id, e.target.value)
+              }
+              placeholder="Chapter title"
+              className="border-0 bg-transparent focus-visible:ring-0"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            {status === "loading" && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+            {status === "success" && (
+              <Check className="h-4 w-4 text-green-500" />
+            )}
+            {status === "error" && (
+              <AlertCircle className="h-4 w-4 text-red-500" />
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => removeChapter(unitId, chapter.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto px-3 py-6 max-w-6xl">
       <h1 className="text-2xl font-bold mb-4">
@@ -377,63 +442,7 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
                         </label>
                       </div>
 
-                      {unit.chapters.map((chapter, chapterIndex) => (
-                        <div
-                          key={chapter.id}
-                          className="flex items-center gap-2"
-                        >
-                          <span className="text-xs text-muted-foreground w-4">
-                            {chapterIndex + 1}.
-                          </span>
-                          <Input
-                            value={chapter.title}
-                            onChange={(e) =>
-                              updateChapterTitle(
-                                unit.id,
-                                chapter.id,
-                                e.target.value
-                              )
-                            }
-                            placeholder={`Chapter ${chapterIndex + 1} title`}
-                            className="flex-1 text-sm h-8 py-1"
-                            disabled={isGenerating}
-                          />
-
-                          {isGenerating && (
-                            <div className="w-7 h-7 flex items-center justify-center">
-                              {chapter.status === "loading" && (
-                                <Loader2
-                                  size={14}
-                                  className="animate-spin text-muted-foreground"
-                                />
-                              )}
-                              {chapter.status === "success" && (
-                                <Check size={14} className="text-green-500" />
-                              )}
-                              {chapter.status === "error" && (
-                                <AlertCircle
-                                  size={14}
-                                  className="text-destructive"
-                                />
-                              )}
-                            </div>
-                          )}
-
-                          {!isGenerating && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive/80"
-                              onClick={() => removeChapter(unit.id, chapter.id)}
-                              disabled={
-                                unit.chapters.length <= 1 || isGenerating
-                              }
-                            >
-                              <Trash2 size={14} />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
+                      {unit.chapters.map((chapter) => renderChapter(chapter, unit.id))}
 
                       <Button
                         variant="outline"
