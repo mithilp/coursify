@@ -141,35 +141,50 @@ export async function generateFullCourse(courseId: string) {
       updatedAt: new Date().toISOString(),
     });
 
-    // Process each chapter individually
+    // Process each chapter individually and track results
+    const chapterResults: ChapterResult[] = [];
     const chapterPromises = [];
 
     for (const unit of courseData.units) {
       for (const chapter of unit.chapters) {
         // Process each chapter with a separate promise
-        const chapterPromise = processChapter(courseId, unit.id, chapter.id);
+        const chapterPromise = processChapter(courseId, unit.id, chapter.id)
+          .then((result) => {
+            chapterResults.push(result);
+            return result;
+          });
         chapterPromises.push(chapterPromise);
       }
     }
 
-    // Let all chapters process independently
-    Promise.all(chapterPromises).then(() => {
-      // When all complete, update course loading state
-      updateDoc(courseRef, {
-        loading: false,
-        updatedAt: new Date().toISOString(),
-      });
-      console.debug(
-        `All chapters generated for courseId: ${courseId} at ${new Date().toISOString()}`
-      );
+    // Wait for all chapters to complete
+    await Promise.all(chapterPromises);
+
+    // Get the final course state after all updates
+    const finalCourseSnap = await getDoc(courseRef);
+    if (!finalCourseSnap.exists()) {
+      throw new Error("Course not found after generation");
+    }
+
+    const finalCourseData = finalCourseSnap.data() as GeneratedCourse;
+
+    // Update the course with the final state and mark as complete
+    await updateDoc(courseRef, {
+      ...finalCourseData,
+      loading: false,
+      updatedAt: new Date().toISOString(),
     });
+
+    console.debug(
+      `All chapters generated for courseId: ${courseId} at ${new Date().toISOString()}`
+    );
 
     revalidatePath(`/create/${courseId}`);
     revalidatePath(`/create/${courseId}/confirm`);
 
     return {
       success: true,
-      chapterResults: [] as ChapterResult[],
+      chapterResults,
     };
   } catch (error) {
     console.error("Error generating course:", error);
@@ -251,6 +266,55 @@ export async function getYoutubeTranscript(videoId: string) {
   }
 }
 
+async function generateQuizFromTitles(unitTitle: string, chapterTitle: string, videoTitle: string): Promise<Quiz> {
+  try {
+    const prompt = `Create a quiz based on the following course content titles. The quiz should have 5 multiple-choice questions with 4 options each. Each question should test understanding of key concepts that would typically be covered in a chapter with these titles. The correct answer should be clearly indicated.
+
+Unit Title: ${unitTitle}
+Chapter Title: ${chapterTitle}
+Video Title: ${videoTitle}
+
+Format the response as a JSON object with the following structure:
+{
+  "title": "Knowledge Check",
+  "questions": [
+    {
+      "question": "Question text",
+      "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+      "correctAnswer": 0
+    }
+  ]
+}`;
+
+    let { text } = await generateText({
+      model: google("gemini-2.0-flash-001"),
+      prompt,
+    });
+
+    // Extract just the JSON portion from the text
+    const jsonStart = text.indexOf('{');
+    const jsonEnd = text.lastIndexOf('}') + 1;
+    text = text.slice(jsonStart, jsonEnd);
+
+    // Parse the JSON response
+    const quizData = JSON.parse(text);
+    return quizData as Quiz;
+  } catch (error) {
+    console.error("Error generating quiz from titles:", error);
+    // Return a default quiz if generation fails
+    return {
+      title: "Knowledge Check",
+      questions: [
+        {
+          question: "What is the main topic discussed in this chapter?",
+          options: ["Option A", "Option B", "Option C", "Option D"],
+          correctAnswer: 0,
+        },
+      ],
+    };
+  }
+}
+
 async function generateQuizFromTranscript(transcript: string, chapterTitle: string): Promise<Quiz> {
   try {
     const prompt = `Create a quiz based on the following video transcript. The quiz should have 5 multiple-choice questions with 4 options each. Each question should test understanding of key concepts from the transcript. The correct answer should be clearly indicated.
@@ -328,7 +392,7 @@ async function processChapter(
           if (chapter.id === chapterId) {
             return {
               ...chapter,
-              status: "loading",
+              loading: true,
             };
           }
           return chapter;
@@ -356,8 +420,15 @@ async function processChapter(
       throw new Error("Chapter not found");
     }
 
+    // Find the unit
+    const unit = courseData.units.find((unit) => unit.id === unitId);
+    if (!unit) {
+      throw new Error("Unit not found");
+    }
+
     // Search for relevant YouTube video
     let videoId = await searchYouTubeVideo(chapter.title);
+    
     if (!videoId) {
       // Instead of throwing an error, we'll try a more generic search
       console.warn(`No video found for "${chapter.title}", trying with course topic`);
@@ -366,70 +437,41 @@ async function processChapter(
       
       if (!videoId) {
         console.error(`No video found for chapter "${chapter.title}" in course "${courseTopic}"`);
-        // Update chapter status to error
-        const errorUnits = courseData.units.map((unit) => {
-          if (unit.id === unitId) {
-            const updatedChapters = unit.chapters.map((chapter) => {
-              if (chapter.id === chapterId) {
-                return {
-                  ...chapter,
-                  status: "error",
-                };
-              }
-              return chapter;
-            });
-            return {
-              ...unit,
-              chapters: updatedChapters,
-            };
-          }
-          return unit;
-        });
-
-        await updateDoc(courseRef, {
-          units: errorUnits,
-          updatedAt: new Date().toISOString(),
-        });
-
+        // Instead of failing, we'll continue with a default video ID
+        // You might want to use a placeholder video or handle this differently
         return { success: false, chapterId, error: "No suitable video found" };
       }
     }
 
     // Get transcript from YouTube video
     const { transcript, success: successTranscript } = await getYoutubeTranscript(videoId);
-    if (!successTranscript) {
-      // Update chapter status to error
-      const errorUnits = courseData.units.map((unit) => {
-        if (unit.id === unitId) {
-          const updatedChapters = unit.chapters.map((chapter) => {
-            if (chapter.id === chapterId) {
-              return {
-                ...chapter,
-                status: "error",
-              };
-            }
-            return chapter;
-          });
-          return {
-            ...unit,
-            chapters: updatedChapters,
-          };
-        }
-        return unit;
-      });
+    
+    let quiz: Quiz;
+    if (!successTranscript || !transcript) {
+      console.warn("No transcript available, generating quiz from titles");
+      // Get video title from YouTube API
+      const videoResponse = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${process.env.YOUTUBE_API_KEY}`
+      );
+      const videoData = await videoResponse.json();
+      const videoTitle = videoData.items?.[0]?.snippet?.title || "Unknown Video";
 
-      await updateDoc(courseRef, {
-        units: errorUnits,
-        updatedAt: new Date().toISOString(),
-      });
-
-      throw new Error("Failed to get video transcript");
+      // Generate quiz from titles
+      quiz = await generateQuizFromTitles(unit.title, chapter.title, videoTitle);
+    } else {
+      // Generate quiz from transcript
+      quiz = await generateQuizFromTranscript(transcript, chapter.title);
     }
 
-    // Generate quiz from transcript
-    const quiz = await generateQuizFromTranscript(transcript, chapter.title);
-    // Update the units with the content and set status to success
-    const finalUnits = courseData.units.map((unit) => {
+    // Get the latest course data to ensure we're working with the most recent state
+    const latestCourseSnap = await getDoc(courseRef);
+    if (!latestCourseSnap.exists()) {
+      throw new Error("Course not found");
+    }
+    const latestCourseData = latestCourseSnap.data() as GeneratedCourse;
+
+    // Update the units with the content and set loading to false
+    const finalUnits = latestCourseData.units.map((unit) => {
       if (unit.id === unitId) {
         const updatedChapters = unit.chapters.map((chapter) => {
           if (chapter.id === chapterId) {
@@ -437,7 +479,7 @@ async function processChapter(
               ...chapter,
               videoId,
               quiz,
-              status: "success",
+              loading: false,
             };
           }
           return chapter;
@@ -447,10 +489,8 @@ async function processChapter(
           chapters: updatedChapters,
         };
       }
-      
       return unit;
     });
-    console.log("FINAL UNITS: ", finalUnits);
 
     // Update course in Firebase
     await updateDoc(courseRef, {
@@ -464,37 +504,6 @@ async function processChapter(
     return { success: true, chapterId };
   } catch (error) {
     console.error(`Error generating chapter ${chapterId}:`, error);
-    
-    // Update chapter status to error
-    const courseRef = doc(db, "courses", courseId);
-    const courseSnap = await getDoc(courseRef);
-    if (courseSnap.exists()) {
-      const courseData = courseSnap.data() as GeneratedCourse;
-      const errorUnits = courseData.units.map((unit) => {
-        if (unit.id === unitId) {
-          const updatedChapters = unit.chapters.map((chapter) => {
-            if (chapter.id === chapterId) {
-              return {
-                ...chapter,
-                status: "error",
-              };
-            }
-            return chapter;
-          });
-          return {
-            ...unit,
-            chapters: updatedChapters,
-          };
-        }
-        return unit;
-      });
-
-      await updateDoc(courseRef, {
-        units: errorUnits,
-        updatedAt: new Date().toISOString(),
-      });
-    }
-
     return { success: false, chapterId, error: (error as Error).message };
   }
 }
