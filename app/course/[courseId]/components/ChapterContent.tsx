@@ -3,32 +3,12 @@
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { ChevronRight, ChevronDown, BookOpen } from "lucide-react";
-
-// Types from the parent component
-type Chapter = {
-  id: string;
-  title: string;
-  videoUrl: string;
-  summary: string;
-};
-
-type Unit = {
-  id: string;
-  title: string;
-  description?: string;
-  chapters: Chapter[];
-};
-
-type Course = {
-  id: string;
-  title: string;
-  units: Unit[];
-};
+import { CourseDB, UnitDB, ChapterDB } from "@/app/lib/schemas";
 
 interface ChapterContentProps {
-  course: Course;
-  currentUnit: Unit;
-  currentChapter?: Chapter;
+  course: CourseDB;
+  currentUnit: UnitDB;
+  currentChapter?: ChapterDB;
 }
 
 export default function ChapterContent({
@@ -79,7 +59,7 @@ export default function ChapterContent({
               className="flex items-center hover:text-foreground focus:outline-none"
               onClick={() => setIsCourseDropdownOpen(!isCourseDropdownOpen)}
             >
-              {course.title}
+              {course.courseTopic}
               <ChevronDown className="h-3 w-3 ml-1 opacity-70" />
             </button>
 
@@ -144,7 +124,7 @@ export default function ChapterContent({
                       {chapter.title}
                     </h3>
                     <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
-                      {chapter.summary.substring(0, 100)}...
+                      {chapter.description?.substring(0, 100) || "No description available"}...
                     </p>
                   </div>
                 </div>
@@ -167,7 +147,7 @@ export default function ChapterContent({
             className="flex items-center hover:text-foreground focus:outline-none"
             onClick={() => setIsCourseDropdownOpen(!isCourseDropdownOpen)}
           >
-            {course.title}
+            {course.courseTopic}
             <ChevronDown className="h-3 w-3 ml-1 opacity-70" />
           </button>
 
@@ -248,124 +228,28 @@ export default function ChapterContent({
       </div>
 
       {/* Video Embed */}
-      <div className="aspect-video bg-black mb-6 md:mb-8 rounded-lg overflow-hidden">
-        <iframe
-          className="w-full h-full"
-          src={currentChapter.videoUrl}
-          title={currentChapter.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        ></iframe>
-      </div>
-
-      {/* Chapter Summary */}
-      <div className="mb-8 md:mb-10">
-        <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">
-          Video Summary
-        </h2>
-        <div className="prose max-w-none text-sm md:text-base">
-          <p>{currentChapter.summary}</p>
+      {currentChapter.videoId && (
+        <div className="mb-8">
+          <div className="aspect-video w-full">
+            <iframe
+              src={`https://www.youtube.com/embed/${currentChapter.videoId}`}
+              title={currentChapter.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full rounded-lg"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Chapter Navigation */}
-      <div className="flex justify-between mt-8 md:mt-12 pt-4 md:pt-6 border-t">
-        {getPreviousChapter(course, currentUnit, currentChapter) ? (
-          <Link
-            href={getChapterUrl(
-              course,
-              ...getPreviousChapter(course, currentUnit, currentChapter)!
-            )}
-            className="flex items-center text-primary hover:underline text-sm md:text-base"
-          >
-            <ChevronRight className="h-4 w-4 mr-1 rotate-180" />
-            <span className="hidden sm:inline">Previous Chapter</span>
-            <span className="sm:hidden">Previous</span>
-          </Link>
+      {/* Chapter Content */}
+      <div className="prose prose-slate dark:prose-invert max-w-none">
+        {currentChapter.description ? (
+          <div dangerouslySetInnerHTML={{ __html: currentChapter.description }} />
         ) : (
-          <div></div>
-        )}
-
-        {getNextChapter(course, currentUnit, currentChapter) ? (
-          <Link
-            href={getChapterUrl(
-              course,
-              ...getNextChapter(course, currentUnit, currentChapter)!
-            )}
-            className="flex items-center text-primary hover:underline text-sm md:text-base"
-          >
-            <span className="hidden sm:inline">Next Chapter</span>
-            <span className="sm:hidden">Next</span>
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Link>
-        ) : (
-          <div></div>
+          <p className="text-muted-foreground">No content available yet.</p>
         )}
       </div>
     </div>
   );
-}
-
-// Helper function to get the URL for a chapter
-function getChapterUrl(course: Course, unit: Unit, chapter: Chapter): string {
-  return `/course/${course.id}?unit=${unit.id}&chapter=${chapter.id}`;
-}
-
-// Helper function to get the previous chapter
-function getPreviousChapter(
-  course: Course,
-  currentUnit: Unit,
-  currentChapter: Chapter
-): [Unit, Chapter] | null {
-  const currentUnitIndex = course.units.findIndex(
-    (u) => u.id === currentUnit.id
-  );
-  const currentChapterIndex = currentUnit.chapters.findIndex(
-    (c) => c.id === currentChapter.id
-  );
-
-  // If not the first chapter in the unit
-  if (currentChapterIndex > 0) {
-    return [currentUnit, currentUnit.chapters[currentChapterIndex - 1]];
-  }
-
-  // If first chapter in the unit but not the first unit
-  if (currentUnitIndex > 0) {
-    const previousUnit = course.units[currentUnitIndex - 1];
-    const lastChapterInPreviousUnit =
-      previousUnit.chapters[previousUnit.chapters.length - 1];
-    return [previousUnit, lastChapterInPreviousUnit];
-  }
-
-  // First chapter in first unit
-  return null;
-}
-
-// Helper function to get the next chapter
-function getNextChapter(
-  course: Course,
-  currentUnit: Unit,
-  currentChapter: Chapter
-): [Unit, Chapter] | null {
-  const currentUnitIndex = course.units.findIndex(
-    (u) => u.id === currentUnit.id
-  );
-  const currentChapterIndex = currentUnit.chapters.findIndex(
-    (c) => c.id === currentChapter.id
-  );
-
-  // If not the last chapter in the unit
-  if (currentChapterIndex < currentUnit.chapters.length - 1) {
-    return [currentUnit, currentUnit.chapters[currentChapterIndex + 1]];
-  }
-
-  // If last chapter in the unit but not the last unit
-  if (currentUnitIndex < course.units.length - 1) {
-    const nextUnit = course.units[currentUnitIndex + 1];
-    const firstChapterInNextUnit = nextUnit.chapters[0];
-    return [nextUnit, firstChapterInNextUnit];
-  }
-
-  // Last chapter in last unit
-  return null;
 }

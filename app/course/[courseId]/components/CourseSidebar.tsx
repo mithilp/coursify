@@ -3,39 +3,19 @@
 import Link from "next/link";
 import { Book, ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
-
-// Types from the parent component
-type Chapter = {
-  id: string;
-  title: string;
-  videoUrl: string;
-  summary: string;
-};
-
-type Unit = {
-  id: string;
-  title: string;
-  description?: string;
-  chapters: Chapter[];
-};
-
-type Course = {
-  id: string;
-  title: string;
-  units: Unit[];
-};
+import { CourseDB } from "@/app/lib/schemas";
 
 interface CourseSidebarProps {
-  course: Course;
-  currentUnitId: string;
-  currentChapterId?: string;
+  course: CourseDB;
+  selectedUnitId?: string;
+  selectedChapterId?: string;
   onNavigate?: () => void; // Callback for mobile navigation
 }
 
 export default function CourseSidebar({
   course,
-  currentUnitId,
-  currentChapterId,
+  selectedUnitId,
+  selectedChapterId,
   onNavigate,
 }: CourseSidebarProps) {
   // Keep track of expanded units
@@ -45,7 +25,7 @@ export default function CourseSidebar({
     // Initialize with the current unit expanded
     const expanded: { [key: string]: boolean } = {};
     course.units.forEach((unit) => {
-      expanded[unit.id] = unit.id === currentUnitId;
+      expanded[unit.id] = unit.id === selectedUnitId;
     });
     return expanded;
   });
@@ -66,7 +46,7 @@ export default function CourseSidebar({
   return (
     <aside className="bg-muted/20 border-r border-border h-[calc(100vh-64px)] overflow-y-auto">
       <div className="p-4">
-        <h1 className="font-bold text-xl mb-6">{course.title}</h1>
+        <h1 className="font-bold text-xl mb-6">{course.courseTopic}</h1>
 
         <nav className="space-y-1">
           {course.units.map((unit, unitIndex) => (
@@ -95,7 +75,7 @@ export default function CourseSidebar({
                     className={`
                       block py-2 px-3 text-sm rounded-md mb-2 font-medium
                       ${
-                        currentUnitId === unit.id && !currentChapterId
+                        selectedUnitId === unit.id && !selectedChapterId
                           ? "bg-primary text-primary-foreground"
                           : "hover:bg-accent hover:text-accent-foreground text-muted-foreground"
                       }
@@ -112,7 +92,7 @@ export default function CourseSidebar({
                       className={`
                         block py-2 px-3 text-sm rounded-md
                         ${
-                          currentChapterId === chapter.id
+                          selectedChapterId === chapter.id
                             ? "bg-primary text-primary-foreground"
                             : "hover:bg-accent hover:text-accent-foreground"
                         }

@@ -266,13 +266,12 @@ export async function getYoutubeTranscript(videoId: string) {
   }
 }
 
-async function generateQuizFromTitles(unitTitle: string, chapterTitle: string, videoTitle: string): Promise<Quiz> {
+async function generateQuizFromTitles(unitTitle: string, chapterTitle: string): Promise<Quiz> {
   try {
     const prompt = `Create a quiz based on the following course content titles. The quiz should have 5 multiple-choice questions with 4 options each. Each question should test understanding of key concepts that would typically be covered in a chapter with these titles. The correct answer should be clearly indicated.
 
 Unit Title: ${unitTitle}
 Chapter Title: ${chapterTitle}
-Video Title: ${videoTitle}
 
 Format the response as a JSON object with the following structure:
 {
@@ -450,14 +449,14 @@ async function processChapter(
     if (!successTranscript || !transcript) {
       console.warn("No transcript available, generating quiz from titles");
       // Get video title from YouTube API
-      const videoResponse = await fetch(
-        `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${process.env.YOUTUBE_API_KEY}`
-      );
-      const videoData = await videoResponse.json();
-      const videoTitle = videoData.items?.[0]?.snippet?.title || "Unknown Video";
+      // const videoResponse = await fetch(
+      //   `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${process.env.YOUTUBE_API_KEY}`
+      // );
+      // const videoData = await videoResponse.json();
+      // const videoTitle = videoData.items?.[0]?.snippet?.title || "Unknown Video";
 
       // Generate quiz from titles
-      quiz = await generateQuizFromTitles(unit.title, chapter.title, videoTitle);
+      quiz = await generateQuizFromTitles(unit.title, chapter.title);
     } else {
       // Generate quiz from transcript
       quiz = await generateQuizFromTranscript(transcript, chapter.title);

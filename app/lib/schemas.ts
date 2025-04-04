@@ -61,12 +61,14 @@ export interface ChapterDB {
   status?: "idle" | "loading" | "success" | "error";
   videoId?: string; // YouTube video ID
   quiz?: Quiz; // Quiz data
+  error?: string; // Error message if generation failed
 }
 
 // Database unit type
 export interface UnitDB {
   id: string;
   title: string;
+  description?: string;
   chapters: ChapterDB[];
 }
 
