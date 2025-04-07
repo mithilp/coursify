@@ -1,6 +1,5 @@
 "use server";
 
-import { YoutubeTranscript } from "youtube-transcript";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { revalidatePath } from "next/cache";
@@ -8,8 +7,36 @@ import { redirect } from "next/navigation";
 import { db } from "@/app/utils/firebase";
 import { doc, getDoc, collection, setDoc, updateDoc } from "firebase/firestore";
 import { GeneratedCourse, CourseDB, Quiz, QuizQuestion } from "@/app/lib/schemas";
+import { YoutubeTranscript } from "youtube-transcript";
 
-// ... existing code ...
+// Cache for transcripts
+const transcriptCache = new Map<string, string>();
+
+// Get YouTube transcript
+async function getYoutubeTranscript(videoId: string) {
+  try {
+    // Check cache first
+    if (transcriptCache.has(videoId)) {
+      return { transcript: transcriptCache.get(videoId)!, success: true };
+    }
+
+    const transcriptArr = await YoutubeTranscript.fetchTranscript(videoId, {
+      lang: "en",
+    });
+    const transcript = transcriptArr
+      .map((entry) => entry.text)
+      .join(" ")
+      .replaceAll("\n", " ");
+    
+    // Cache the transcript
+    transcriptCache.set(videoId, transcript);
+    
+    return { transcript, success: true };
+  } catch (e) {
+    console.error("Error fetching transcript:", e);
+    return { transcript: "", success: false };
+  }
+}
 
 // Generate AI chat response
 export async function generateChatResponse(
@@ -27,7 +54,7 @@ export async function generateChatResponse(
       throw new Error("Course not found");
     }
 
-    const courseData = courseSnap.data() as GeneratedCourse;
+    const courseData = courseSnap.data() as CourseDB;
     const unit = courseData.units.find((u) => u.id === unitId);
     const chapter = unit?.chapters.find((c) => c.id === chapterId);
 
@@ -35,20 +62,29 @@ export async function generateChatResponse(
       throw new Error("Chapter not found");
     }
 
+    // Get transcript if video exists
+    let transcript = "No transcript available";
+    if (chapter.videoId) {
+      const { transcript: videoTranscript, success } = await getYoutubeTranscript(chapter.videoId);
+      if (success && videoTranscript) {
+        transcript = videoTranscript;
+      }
+    }
+
     // Create a prompt that includes course context
-    console.log("Chapter Content:", chapter.content);
     const prompt = `You are an AI tutor helping a student understand the content of a course chapter.
     
 Course Topic: ${courseData.courseTopic}
 Unit: ${unit.title}
 Chapter: ${chapter.title}
 Chapter Content: ${chapter.content || "No content available yet"}
+Video Transcript: ${transcript}
 
 Student Question: ${userMessage}
 
 Please provide a helpful, educational response that:
 1. Directly addresses the student's question
-2. Uses the chapter content as context
+2. Uses the chapter content and video transcript as context
 3. Provides clear explanations and examples
 4. Encourages further learning.
 
