@@ -141,7 +141,12 @@ export function CourseClientPage({
               </Button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <InteractionsSidebar quiz={selectedChapter.quiz} />
+              <InteractionsSidebar 
+                quiz={selectedChapter.quiz} 
+                courseId={courseId}
+                unitId={selectedUnit.id}
+                chapterId={selectedChapter.id}
+              />
             </div>
           </div>
         </div>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, AlertCircle, MessageSquare, RotateCcw, Eye } from "lucide-react";
+import { Check, AlertCircle, MessageSquare, RotateCcw, Eye, Send } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { generateChatResponse } from "../actions";
 
 // Quiz types
 interface QuizQuestion {
@@ -17,18 +18,40 @@ interface Quiz {
   questions: QuizQuestion[];
 }
 
+interface ChatMessage {
+  id: string;
+  text: string;
+  isUser: boolean;
+}
+
 interface InteractionsSidebarProps {
   quiz?: Quiz;
+  courseId: string;
+  unitId: string;
+  chapterId: string;
 }
 
 export default function InteractionsSidebar({
   quiz,
+  courseId,
+  unitId,
+  chapterId,
 }: InteractionsSidebarProps) {
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>(
     quiz?.questions?.map(() => -1) || []
   );
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: "1",
+      text: "Hi! I'm your AI tutor. How can I help you understand this chapter better?",
+      isUser: false,
+    },
+  ]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Reset state when quiz changes
   useEffect(() => {
@@ -36,6 +59,67 @@ export default function InteractionsSidebar({
     setIsSubmitted(false);
     setShowAnswers(false);
   }, [quiz]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Handle sending a message
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+
+    const userMessage = inputMessage.trim();
+    setInputMessage("");
+    setIsLoading(true);
+
+    // Add user message
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now().toString(), text: userMessage, isUser: true },
+    ]);
+
+    try {
+      // Get AI response
+      const result = await generateChatResponse(
+        courseId,
+        unitId,
+        chapterId,
+        userMessage
+      );
+
+      if (result.success) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            text: result.response || "I'm sorry, I couldn't generate a response. Please try again.",
+            isUser: false,
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            text: "Sorry, I encountered an error. Please try again.",
+            isUser: false,
+          },
+        ]);
+      }
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: "Sorry, I encountered an error. Please try again.",
+          isUser: false,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Handle option selection
   const handleSelectOption = (questionIndex: number, optionIndex: number) => {
@@ -72,25 +156,6 @@ export default function InteractionsSidebar({
           0
         )
       : 0;
-
-  // Dummy chat messages
-  const dummyChatMessages = [
-    {
-      id: 1,
-      text: "Hi! How can I help you understand this material better?",
-      isUser: false,
-    },
-    {
-      id: 2,
-      text: "I'm having trouble understanding the concept of state management.",
-      isUser: true,
-    },
-    {
-      id: 3,
-      text: "State management refers to how data is stored, updated, and shared between components in your application. Would you like me to explain more about specific state management approaches?",
-      isUser: false,
-    },
-  ];
 
   return (
     <div className="p-4 md:p-6">
@@ -262,7 +327,7 @@ export default function InteractionsSidebar({
             <h2 className="font-semibold text-lg mb-4">AI Assistant</h2>
 
             <div className="flex-1 overflow-y-auto mb-4 space-y-4">
-              {dummyChatMessages.map((message) => (
+              {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${
@@ -280,15 +345,35 @@ export default function InteractionsSidebar({
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             <div className="flex gap-2">
               <input
                 type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
                 placeholder="Ask a question about this chapter..."
                 className="flex-1 p-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                disabled={isLoading}
               />
-              <Button size="sm">Send</Button>
+              <Button
+                size="sm"
+                onClick={handleSendMessage}
+                disabled={isLoading || !inputMessage.trim()}
+              >
+                {isLoading ? (
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
         </TabsContent>
