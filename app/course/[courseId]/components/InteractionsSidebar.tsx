@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, AlertCircle, MessageSquare, RotateCcw, Eye } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -29,6 +29,13 @@ export default function InteractionsSidebar({
   );
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
+
+  // Reset state when quiz changes
+  useEffect(() => {
+    setSelectedAnswers(quiz?.questions?.map(() => -1) || []);
+    setIsSubmitted(false);
+    setShowAnswers(false);
+  }, [quiz]);
 
   // Handle option selection
   const handleSelectOption = (questionIndex: number, optionIndex: number) => {
