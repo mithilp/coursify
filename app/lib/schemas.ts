@@ -81,6 +81,8 @@ export interface CourseDB {
   createdAt: string;
   updatedAt: string;
   loading?: boolean;
+  isPublic?: boolean;
+  published?: boolean;
 }
 
 // ---------------------

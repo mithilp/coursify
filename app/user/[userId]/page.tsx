@@ -50,9 +50,9 @@ const dummyUser = {
 };
 
 interface UserProfilePageProps {
-  params: {
+  params: Promise<{
     userId: string;
-  };
+  }>;
 }
 
 export default function UserProfilePage({ params }: UserProfilePageProps) {

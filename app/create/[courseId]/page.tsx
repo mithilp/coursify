@@ -4,9 +4,9 @@ import { getCourse } from "./actions";
 import { CourseEditor } from "./CourseEditor";
 
 interface PageParams {
-  params: {
+  params: Promise<{
     courseId: string;
-  };
+  }>;
 }
 
 export default async function CourseEditPage({ params }: PageParams) {

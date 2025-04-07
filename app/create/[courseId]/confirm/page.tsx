@@ -4,9 +4,9 @@ import { getCourse } from "../actions";
 import { CourseConfirmation } from "./CourseConfirmation";
 
 interface PageParams {
-  params: {
+  params: Promise<{
     courseId: string;
-  };
+  }>;
 }
 
 export default async function CourseConfirmPage({ params }: PageParams) {

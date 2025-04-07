@@ -65,6 +65,8 @@ const exampleCourse: CourseDB = {
   isPublic: true,
   loading: false,
   published: false,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
   units: [
     {
       id: "unit-1",

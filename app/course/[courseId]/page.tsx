@@ -9,8 +9,8 @@ export default async function CoursePage({
   params,
   searchParams,
 }: {
-  params: { courseId: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const courseId = (await params).courseId;
   const unitParam = (await searchParams).unit as string | undefined;
