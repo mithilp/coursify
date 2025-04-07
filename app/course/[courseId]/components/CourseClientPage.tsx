@@ -1,15 +1,12 @@
 "use client";
 
-import { notFound } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CourseSidebar from "./CourseSidebar";
 import InteractionsSidebar from "./InteractionsSidebar";
 import ChapterContent from "./ChapterContent";
 import Link from "next/link";
-import { db } from "@/app/utils/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
 import { CourseDB } from "@/app/lib/schemas";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -65,52 +62,23 @@ export function CourseClientPage({
   chapterParam,
   initialCourse,
 }: CourseClientPageProps) {
-  const [course, setCourse] = useState<CourseDB | null>(initialCourse || null);
-  const [loading, setLoading] = useState(!initialCourse);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showQuiz, setShowQuiz] = useState(true);
 
-  // Subscribe to course updates in Firestore
-  useEffect(() => {
-    const courseRef = doc(db, "courses", courseId);
-    const unsubscribe = onSnapshot(courseRef, (doc) => {
-      if (doc.exists()) {
-        const courseData = { id: courseId, ...doc.data() } as CourseDB;
-        setCourse(courseData);
-      } else {
-        setCourse(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [courseId]);
-
-  if (loading) {
+  if (!initialCourse) {
     return (
-      <div className="flex h-screen">
-        <div className="w-64 border-r p-4">
-          <Skeleton className="h-8 w-full mb-4" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-full" />
-        </div>
-        <div className="flex-1 p-4">
-          <Skeleton className="h-8 w-1/2 mb-4" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-full mb-2" />
-          <Skeleton className="h-4 w-3/4" />
-        </div>
+      <div className="flex flex-col items-center justify-center h-screen p-4">
+        <h1 className="text-2xl font-bold mb-4">Course Not Found</h1>
+        <p className="text-muted-foreground mb-6">The course you're looking for doesn't exist.</p>
+        <Link href="/gallery">
+          <Button>Back to Gallery</Button>
+        </Link>
       </div>
     );
   }
 
-  if (!course) {
-    return notFound();
-  }
-
   // Find the selected unit and chapter
-  const selectedUnit = course.units.find((unit) => unit.id === unitParam) || course.units[0];
+  const selectedUnit = initialCourse.units.find((unit) => unit.id === unitParam) || initialCourse.units[0];
   const selectedChapter = chapterParam
     ? selectedUnit.chapters.find((chapter) => chapter.id === chapterParam)
     : undefined;
@@ -137,7 +105,7 @@ export function CourseClientPage({
         } md:translate-x-0 fixed md:static inset-y-0 left-0 z-20 w-64 bg-background border-r transition-transform duration-200 ease-in-out`}
       >
         <CourseSidebar
-          course={course}
+          course={initialCourse}
           selectedUnitId={unitParam}
           selectedChapterId={chapterParam}
         />
@@ -147,7 +115,7 @@ export function CourseClientPage({
       <div className="flex-1 overflow-auto">
         <div className="px-4 py-6 md:py-8 max-w-4xl mx-auto">
           <ChapterContent
-            course={course}
+            course={initialCourse}
             currentUnit={selectedUnit}
             currentChapter={selectedChapter}
           />
