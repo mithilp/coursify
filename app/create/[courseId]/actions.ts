@@ -44,32 +44,40 @@ export async function updateCourse(
 
     const currentData = courseSnap.data() as GeneratedCourse;
 
-    // If updating units, preserve the existing chapter data
+    // If updating units, ensure proper structure
     if (courseData.units) {
       const updatedUnits = courseData.units.map((newUnit) => {
         const existingUnit = currentData.units.find((u) => u.id === newUnit.id);
-        if (existingUnit) {
-          // Preserve existing chapter data
-          const updatedChapters = newUnit.chapters.map((newChapter) => {
-            const existingChapter = existingUnit.chapters.find(
-              (c) => c.id === newChapter.id
-            );
+        
+        // For each unit, ensure it has the required structure
+        const unit = {
+          id: newUnit.id,
+          title: newUnit.title,
+          chapters: newUnit.chapters.map((newChapter) => {
+            // For each chapter, ensure it has the required structure
             return {
-              ...newChapter,
-              content: existingChapter?.content,
-              videoId: existingChapter?.videoId,
-              quiz: existingChapter?.quiz,
-              loading: existingChapter?.loading,
-              error: existingChapter?.error,
+              id: newChapter.id,
+              title: newChapter.title,
+              status: newChapter.status || "idle"
             };
-          });
-          return { ...newUnit, chapters: updatedChapters };
-        }
-        return newUnit;
+          })
+        };
+
+        return unit;
       });
-      courseData.units = updatedUnits;
+
+      // Update the document with the properly structured data
+      await updateDoc(courseRef, {
+        units: updatedUnits,
+        updatedAt: new Date().toISOString(),
+      });
+
+      revalidatePath(`/create/${courseId}`);
+      revalidatePath(`/create/${courseId}/confirm`);
+      return { success: true };
     }
 
+    // If not updating units, just update other fields
     await updateDoc(courseRef, {
       ...courseData,
       updatedAt: new Date().toISOString(),
@@ -80,7 +88,10 @@ export async function updateCourse(
     return { success: true };
   } catch (error) {
     console.error("Error updating course:", error);
-    return { success: false, error: (error as Error).message };
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Unknown error occurred" 
+    };
   }
 }
 

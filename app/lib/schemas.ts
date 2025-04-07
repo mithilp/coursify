@@ -98,3 +98,13 @@ export type CourseUnitInput = {
 
 // Type for the generated course (from AI model)
 export type GeneratedCourse = z.infer<typeof courseSchema>;
+
+export interface Chapter {
+  id: string;
+  title: string;
+  description?: string;
+  content?: string;
+  status?: "idle" | "loading" | "success" | "error";
+  videoId?: string;
+  quiz?: Quiz;
+}

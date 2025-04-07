@@ -147,15 +147,6 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
         unit.id === unitId ? { ...unit, title } : unit
       ),
     }));
-
-    // Save to Firebase
-    startTransition(() => {
-      updateCourse(course.id, {
-        units: course.units.map((unit) =>
-          unit.id === unitId ? { ...unit, title } : unit
-        ),
-      });
-    });
   };
 
   // Update chapter title
@@ -179,22 +170,6 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
           : unit
       ),
     }));
-
-    // Save to Firebase
-    startTransition(() => {
-      updateCourse(course.id, {
-        units: course.units.map((unit) =>
-          unit.id === unitId
-            ? {
-                ...unit,
-                chapters: unit.chapters.map((chapter) =>
-                  chapter.id === chapterId ? { ...chapter, title } : chapter
-                ),
-              }
-            : unit
-        ),
-      });
-    });
   };
 
   // Add a new unit
@@ -210,13 +185,6 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
       ...prev,
       units: [...prev.units, newUnit],
     }));
-
-    // Save to Firebase
-    startTransition(() => {
-      updateCourse(course.id, {
-        units: [...course.units, newUnit],
-      });
-    });
 
     // Auto-expand the new unit
     setExpandedUnits((prev) => [...prev, newUnitId]);
@@ -240,20 +208,6 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
           : unit
       ),
     }));
-
-    // Save to Firebase
-    startTransition(() => {
-      updateCourse(course.id, {
-        units: course.units.map((unit) =>
-          unit.id === unitId
-            ? {
-                ...unit,
-                chapters: [...unit.chapters, newChapter],
-              }
-            : unit
-        ),
-      });
-    });
   };
 
   // Handle unit delete with modifier key check
@@ -277,13 +231,6 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
       ...prev,
       units: prev.units.filter((unit) => unit.id !== unitId),
     }));
-
-    // Save to Firebase
-    startTransition(() => {
-      updateCourse(course.id, {
-        units: course.units.filter((unit) => unit.id !== unitId),
-      });
-    });
 
     // Remove unit from expanded state
     setExpandedUnits((prev) => prev.filter((id) => id !== unitId));
@@ -321,22 +268,6 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
           : unit
       ),
     }));
-
-    // Save to Firebase
-    startTransition(() => {
-      updateCourse(course.id, {
-        units: course.units.map((unit) =>
-          unit.id === unitId
-            ? {
-                ...unit,
-                chapters: unit.chapters.filter(
-                  (chapter) => chapter.id !== chapterId
-                ),
-              }
-            : unit
-        ),
-      });
-    });
   };
 
   // Handle accordion value change
@@ -348,33 +279,49 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
   const handleGenerateCourse = async () => {
     setIsGenerating(true);
 
-    // Set all chapters to loading state
-    setCourse((prev) => ({
-      ...prev,
-      units: prev.units.map((unit) => ({
-        ...unit,
-        chapters: unit.chapters.map((chapter) => ({
-          ...chapter,
-          status: "loading",
-        })),
-      })),
-    }));
-
     try {
-      // Start generation
+      // First, save the current course structure to Firestore
+      const saveResult = await updateCourse(course.id, {
+        units: course.units.map(unit => ({
+          id: unit.id,
+          title: unit.title,
+          chapters: unit.chapters.map(chapter => ({
+            id: chapter.id,
+            title: chapter.title,
+            status: "idle" // Ensure each chapter has a status
+          }))
+        }))
+      });
+
+      if (!saveResult.success) {
+        throw new Error(saveResult.error || "Failed to save course structure");
+      }
+
+      // Set all chapters to loading state
+      setCourse((prev) => ({
+        ...prev,
+        units: prev.units.map((unit) => ({
+          ...unit,
+          chapters: unit.chapters.map((chapter) => ({
+            ...chapter,
+            status: "loading",
+          })),
+        })),
+      }));
+
+      // Start generation after saving
       const result = await generateFullCourse(course.id);
       
       if (result.success) {
         // Redirect to course page after successful generation
         window.location.href = `/course/${course.id}`;
       } else {
-        // Handle error case
-        console.error("Failed to generate course:", result.error);
-        // You might want to show an error message to the user here
+        throw new Error(result.error || "Failed to generate course");
       }
     } catch (error) {
       console.error("Error during course generation:", error);
-      // Handle error case
+      // Show error to user
+      alert(error instanceof Error ? error.message : "An error occurred during course generation");
     } finally {
       setIsGenerating(false);
     }
