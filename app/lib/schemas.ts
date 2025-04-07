@@ -76,14 +76,11 @@ export interface UnitDB {
 export interface CourseDB {
   id: string;
   courseTopic: string;
+  description?: string;
   units: UnitDB[];
-  createdAt?: string;
-  updatedAt?: string;
-  isPublic?: boolean;
+  createdAt: string;
+  updatedAt: string;
   loading?: boolean;
-  published?: boolean;
-  publishedAt?: string;
-  views?: number;
 }
 
 // ---------------------
