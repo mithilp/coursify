@@ -147,6 +147,15 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
         unit.id === unitId ? { ...unit, title } : unit
       ),
     }));
+
+    // Save to Firebase
+    startTransition(() => {
+      updateCourse(course.id, {
+        units: course.units.map((unit) =>
+          unit.id === unitId ? { ...unit, title } : unit
+        ),
+      });
+    });
   };
 
   // Update chapter title
@@ -170,6 +179,22 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
           : unit
       ),
     }));
+
+    // Save to Firebase
+    startTransition(() => {
+      updateCourse(course.id, {
+        units: course.units.map((unit) =>
+          unit.id === unitId
+            ? {
+                ...unit,
+                chapters: unit.chapters.map((chapter) =>
+                  chapter.id === chapterId ? { ...chapter, title } : chapter
+                ),
+              }
+            : unit
+        ),
+      });
+    });
   };
 
   // Add a new unit
@@ -186,29 +211,49 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
       units: [...prev.units, newUnit],
     }));
 
+    // Save to Firebase
+    startTransition(() => {
+      updateCourse(course.id, {
+        units: [...course.units, newUnit],
+      });
+    });
+
     // Auto-expand the new unit
     setExpandedUnits((prev) => [...prev, newUnitId]);
   };
 
   // Add a new chapter to a unit
   const addChapter = (unitId: string) => {
+    const newChapter = {
+      id: `${unitId}-chapter-${course.units.find((u) => u.id === unitId)?.chapters.length || 0 + 1}`,
+      title: "",
+    };
+
     setCourse((prev) => ({
       ...prev,
       units: prev.units.map((unit) =>
         unit.id === unitId
           ? {
               ...unit,
-              chapters: [
-                ...unit.chapters,
-                {
-                  id: `${unitId}-chapter-${unit.chapters.length + 1}`,
-                  title: "",
-                },
-              ],
+              chapters: [...unit.chapters, newChapter],
             }
           : unit
       ),
     }));
+
+    // Save to Firebase
+    startTransition(() => {
+      updateCourse(course.id, {
+        units: course.units.map((unit) =>
+          unit.id === unitId
+            ? {
+                ...unit,
+                chapters: [...unit.chapters, newChapter],
+              }
+            : unit
+        ),
+      });
+    });
   };
 
   // Handle unit delete with modifier key check
@@ -232,6 +277,13 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
       ...prev,
       units: prev.units.filter((unit) => unit.id !== unitId),
     }));
+
+    // Save to Firebase
+    startTransition(() => {
+      updateCourse(course.id, {
+        units: course.units.filter((unit) => unit.id !== unitId),
+      });
+    });
 
     // Remove unit from expanded state
     setExpandedUnits((prev) => prev.filter((id) => id !== unitId));
@@ -269,6 +321,22 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
           : unit
       ),
     }));
+
+    // Save to Firebase
+    startTransition(() => {
+      updateCourse(course.id, {
+        units: course.units.map((unit) =>
+          unit.id === unitId
+            ? {
+                ...unit,
+                chapters: unit.chapters.filter(
+                  (chapter) => chapter.id !== chapterId
+                ),
+              }
+            : unit
+        ),
+      });
+    });
   };
 
   // Handle accordion value change
@@ -277,7 +345,7 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
   };
 
   // Handle "Generate Course" button click
-  const handleGenerateCourse = () => {
+  const handleGenerateCourse = async () => {
     setIsGenerating(true);
 
     // Set all chapters to loading state
@@ -292,13 +360,24 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
       })),
     }));
 
-    // Start generation in the background without awaiting
-    startTransition(() => {
-      generateFullCourse(course.id);
-    });
-
-    // Immediately redirect to confirm page without waiting
-    window.location.href = `/create/${course.id}/confirm`;
+    try {
+      // Start generation
+      const result = await generateFullCourse(course.id);
+      
+      if (result.success) {
+        // Redirect to course page after successful generation
+        window.location.href = `/course/${course.id}`;
+      } else {
+        // Handle error case
+        console.error("Failed to generate course:", result.error);
+        // You might want to show an error message to the user here
+      }
+    } catch (error) {
+      console.error("Error during course generation:", error);
+      // Handle error case
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // Find unit title by ID

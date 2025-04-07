@@ -36,12 +36,47 @@ export async function updateCourse(
 ) {
   try {
     const courseRef = doc(db, "courses", courseId);
+    const courseSnap = await getDoc(courseRef);
+
+    if (!courseSnap.exists()) {
+      throw new Error("Course not found");
+    }
+
+    const currentData = courseSnap.data() as GeneratedCourse;
+
+    // If updating units, preserve the existing chapter data
+    if (courseData.units) {
+      const updatedUnits = courseData.units.map((newUnit) => {
+        const existingUnit = currentData.units.find((u) => u.id === newUnit.id);
+        if (existingUnit) {
+          // Preserve existing chapter data
+          const updatedChapters = newUnit.chapters.map((newChapter) => {
+            const existingChapter = existingUnit.chapters.find(
+              (c) => c.id === newChapter.id
+            );
+            return {
+              ...newChapter,
+              content: existingChapter?.content,
+              videoId: existingChapter?.videoId,
+              quiz: existingChapter?.quiz,
+              loading: existingChapter?.loading,
+              error: existingChapter?.error,
+            };
+          });
+          return { ...newUnit, chapters: updatedChapters };
+        }
+        return newUnit;
+      });
+      courseData.units = updatedUnits;
+    }
+
     await updateDoc(courseRef, {
       ...courseData,
       updatedAt: new Date().toISOString(),
     });
 
     revalidatePath(`/create/${courseId}`);
+    revalidatePath(`/create/${courseId}/confirm`);
     return { success: true };
   } catch (error) {
     console.error("Error updating course:", error);
@@ -147,6 +182,25 @@ export async function generateFullCourse(courseId: string) {
 
     for (const unit of courseData.units) {
       for (const chapter of unit.chapters) {
+        // Set chapter to loading state
+        const updatedUnits = courseData.units.map((u) => {
+          if (u.id === unit.id) {
+            const updatedChapters = u.chapters.map((c) => {
+              if (c.id === chapter.id) {
+                return { ...c, loading: true, error: null };
+              }
+              return c;
+            });
+            return { ...u, chapters: updatedChapters };
+          }
+          return u;
+        });
+
+        await updateDoc(courseRef, {
+          units: updatedUnits,
+          updatedAt: new Date().toISOString(),
+        });
+
         // Process each chapter with a separate promise
         const chapterPromise = processChapter(courseId, unit.id, chapter.id)
           .then((result) => {

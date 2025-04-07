@@ -119,12 +119,12 @@ export function CourseClientPage({
   const toggleQuiz = () => setShowQuiz(!showQuiz);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-[calc(100vh-64px)] mt-16">
       {/* Mobile sidebar toggle */}
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden fixed top-4 left-4 z-50"
+        className="md:hidden fixed top-20 left-4 z-30"
         onClick={toggleSidebar}
       >
         <Menu className="h-6 w-6" />
@@ -134,7 +134,7 @@ export function CourseClientPage({
       <div
         className={`${
           showSidebar ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 fixed md:static inset-y-0 left-0 z-40 w-64 bg-background border-r transition-transform duration-200 ease-in-out`}
+        } md:translate-x-0 fixed md:static inset-y-0 left-0 z-20 w-64 bg-background border-r transition-transform duration-200 ease-in-out`}
       >
         <CourseSidebar
           course={course}
@@ -159,11 +159,10 @@ export function CourseClientPage({
         <div
           className={`${
             showQuiz ? "translate-x-0" : "translate-x-full"
-          } md:translate-x-0 fixed md:static inset-y-0 right-0 z-40 w-64 bg-background border-l transition-transform duration-200 ease-in-out`}
+          } md:translate-x-0 fixed md:static inset-y-0 right-0 z-20 w-80 bg-background border-l transition-transform duration-200 ease-in-out`}
         >
           <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-semibold">Knowledge Check</h2>
+            <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
                 size="icon"

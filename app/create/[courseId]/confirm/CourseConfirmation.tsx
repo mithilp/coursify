@@ -84,18 +84,18 @@ export function CourseConfirmation({
           <span className="text-xs text-amber-500">Loading...</span>
         </div>
       );
-    } else if (chapter.videoId && chapter.quiz) {
-      return (
-        <div className="flex items-center">
-          <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-          <span className="text-xs text-green-500">Complete</span>
-        </div>
-      );
     } else if (chapter.error) {
       return (
         <div className="flex items-center">
           <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
           <span className="text-xs text-red-500">Error: {chapter.error}</span>
+        </div>
+      );
+    } else if (chapter.content && chapter.videoId && chapter.quiz) {
+      return (
+        <div className="flex items-center">
+          <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+          <span className="text-xs text-green-500">Complete</span>
         </div>
       );
     } else {

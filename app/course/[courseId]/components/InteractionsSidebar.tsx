@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, AlertCircle, MessageSquare } from "lucide-react";
+import { Check, AlertCircle, MessageSquare, RotateCcw, Eye } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 // Quiz types
@@ -28,6 +28,7 @@ export default function InteractionsSidebar({
     quiz?.questions?.map(() => -1) || []
   );
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showAnswers, setShowAnswers] = useState(false);
 
   // Handle option selection
   const handleSelectOption = (questionIndex: number, optionIndex: number) => {
@@ -41,6 +42,13 @@ export default function InteractionsSidebar({
   // Handle quiz submission
   const handleSubmit = () => {
     setIsSubmitted(true);
+  };
+
+  // Handle quiz retry
+  const handleRetry = () => {
+    setSelectedAnswers(quiz?.questions?.map(() => -1) || []);
+    setIsSubmitted(false);
+    setShowAnswers(false);
   };
 
   // Check if an answer is correct
@@ -119,6 +127,7 @@ export default function InteractionsSidebar({
                           isSubmitted && isSelected && correct;
                         const unselectedButCorrect =
                           isSubmitted && !isSelected && correct;
+                        const showAsCorrect = showAnswers && correct;
 
                         return (
                           <div
@@ -136,18 +145,18 @@ export default function InteractionsSidebar({
                                   : ""
                               }
                               ${
-                                selectedAndCorrect
-                                  ? "bg-success/10 border border-success/30 text-success"
+                                (selectedAndCorrect || showAsCorrect) && isSubmitted
+                                  ? "bg-green-100 border border-green-300 text-green-700"
                                   : ""
                               }
                               ${
-                                unselectedButCorrect
-                                  ? "bg-success/10 border border-success/30 text-success"
+                                unselectedButCorrect && isSubmitted
+                                  ? "bg-green-100 border border-green-300 text-green-700"
                                   : ""
                               }
                               ${!isSubmitted ? "hover:bg-muted" : ""}
                               ${
-                                !isSelected && !unselectedButCorrect
+                                !isSelected && !unselectedButCorrect && !showAsCorrect
                                   ? "border border-border"
                                   : ""
                               }
@@ -170,19 +179,23 @@ export default function InteractionsSidebar({
                                   : ""
                               }
                               ${
-                                selectedAndCorrect
-                                  ? "border-success bg-success"
+                                (selectedAndCorrect || showAsCorrect) && isSubmitted
+                                  ? "border-green-500 bg-green-500"
                                   : ""
                               }
-                              ${unselectedButCorrect ? "border-success" : ""}
                               ${
-                                !isSelected && !unselectedButCorrect
+                                unselectedButCorrect && isSubmitted
+                                  ? "border-green-500 bg-green-500"
+                                  : ""
+                              }
+                              ${
+                                !isSelected && !unselectedButCorrect && !showAsCorrect
                                   ? "border-input"
                                   : ""
                               }
                             `}
                             >
-                              {(selectedAndCorrect || unselectedButCorrect) && (
+                              {(selectedAndCorrect || unselectedButCorrect || showAsCorrect) && isSubmitted && (
                                 <Check className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                               )}
                               {selectedButWrong && (
@@ -199,10 +212,30 @@ export default function InteractionsSidebar({
               </div>
 
               {isSubmitted ? (
-                <div className="mt-5 md:mt-6 p-3 md:p-4 bg-background rounded-md border text-center">
-                  <p className="font-medium text-sm md:text-base">
-                    You scored {score} out of {quiz.questions.length}
-                  </p>
+                <div className="mt-5 md:mt-6 space-y-3">
+                  <div className="p-3 md:p-4 bg-background rounded-md border text-center">
+                    <p className="font-medium text-sm md:text-base">
+                      You scored {score} out of {quiz.questions.length}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleRetry}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Retry Quiz
+                    </Button>
+                    <Button
+                      onClick={() => setShowAnswers(!showAnswers)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      {showAnswers ? "Hide Answers" : "Show Answers"}
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <Button
@@ -248,10 +281,7 @@ export default function InteractionsSidebar({
                 placeholder="Ask a question about this chapter..."
                 className="flex-1 p-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary text-sm"
               />
-              <Button size="sm">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Send
-              </Button>
+              <Button size="sm">Send</Button>
             </div>
           </div>
         </TabsContent>

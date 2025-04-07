@@ -230,22 +230,22 @@ export default function ChapterContent({
       {/* Video Embed */}
       {currentChapter.videoId && (
         <div className="mb-8">
-          <div className="aspect-video w-full">
+          <div className="aspect-video w-full max-w-4xl mx-auto">
             <iframe
               src={`https://www.youtube.com/embed/${currentChapter.videoId}`}
               title={currentChapter.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              className="w-full h-full rounded-lg"
+              className="w-full h-full rounded-lg shadow-lg"
             />
           </div>
         </div>
       )}
 
       {/* Chapter Content */}
-      <div className="prose prose-slate dark:prose-invert max-w-none">
-        {currentChapter.description ? (
-          <div dangerouslySetInnerHTML={{ __html: currentChapter.description }} />
+      <div className="prose prose-slate dark:prose-invert max-w-4xl mx-auto">
+        {currentChapter.content ? (
+          <div dangerouslySetInnerHTML={{ __html: currentChapter.content }} />
         ) : (
           <p className="text-muted-foreground">No content available yet.</p>
         )}
