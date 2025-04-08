@@ -142,6 +142,19 @@ export default function InteractionsSidebar({
     setShowAnswers(false);
   };
 
+  // Handle show/hide answers
+  const handleShowAnswers = () => {
+    if (showAnswers) {
+      // If hiding answers, reset the quiz
+      handleRetry();
+    } else {
+      // If showing answers, mark all correct answers
+      const correctAnswers = quiz?.questions.map(q => q.correctAnswer) || [];
+      setSelectedAnswers(correctAnswers);
+      setShowAnswers(true);
+    }
+  };
+
   // Check if an answer is correct
   const isCorrect = (questionIndex: number, optionIndex: number) => {
     if (!quiz) return false;
@@ -232,6 +245,11 @@ export default function InteractionsSidebar({
                                   ? "border border-border"
                                   : ""
                               }
+                              ${
+                                showAnswers && quiz?.questions[questionIndex].correctAnswer === optionIndex
+                                  ? "bg-green-50 border border-green-200 text-green-700"
+                                  : ""
+                              }
                             `}
                             onClick={() =>
                               handleSelectOption(questionIndex, optionIndex)
@@ -265,6 +283,11 @@ export default function InteractionsSidebar({
                                   ? "border-input"
                                   : ""
                               }
+                              ${
+                                showAnswers && quiz?.questions[questionIndex].correctAnswer === optionIndex
+                                  ? "border-green-500 bg-green-500"
+                                  : ""
+                              }
                             `}
                             >
                               {(selectedAndCorrect || unselectedButCorrect || showAsCorrect) && isSubmitted && (
@@ -272,6 +295,9 @@ export default function InteractionsSidebar({
                               )}
                               {selectedButWrong && (
                                 <AlertCircle className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
+                              )}
+                              {showAnswers && quiz?.questions[questionIndex].correctAnswer === optionIndex && (
+                                <Check className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                               )}
                             </div>
                             <span>{option}</span>
@@ -300,7 +326,7 @@ export default function InteractionsSidebar({
                       Retry Quiz
                     </Button>
                     <Button
-                      onClick={() => setShowAnswers(!showAnswers)}
+                      onClick={handleShowAnswers}
                       variant="outline"
                       className="flex-1"
                     >
