@@ -555,13 +555,44 @@ async function processChapter(
     const { transcript, success: successTranscript } = await getYoutubeTranscript(videoId);
     
     let quiz: Quiz;
+    let summary: string;
+
     if (!successTranscript || !transcript) {
       console.warn("[YouTubeAPI] No transcript available, generating quiz from titles");
+
       // Generate quiz from titles
       quiz = await generateQuizFromTitles(unit.title, chapter.title);
+      
+      // Generate summary from titles
+      const summaryPrompt = `Create comprehensive lecture notes for a chapter titled "${chapter.title}" which is part of a unit called "${unit.title}" in a course about "${courseData.courseTopic}".
+      The notes should be well-structured, educational, and around 500-800 words.
+      Include key concepts, explanations, and examples where relevant.
+      Format the notes in a clear, easy-to-read structure with bullet points and sections.`;
+      
+      const { text: summaryText } = await generateText({
+        model: google("gemini-2.0-flash-001"),
+        prompt: summaryPrompt,
+      });
+      summary = summaryText;
     } else {
       // Generate quiz from transcript
       quiz = await generateQuizFromTranscript(transcript, chapter.title);
+      
+      // Generate summary from transcript
+      const summaryPrompt = `Create comprehensive lecture notes based on the following video transcript for a chapter titled "${chapter.title}" which is part of a unit called "${unit.title}" in a course about "${courseData.courseTopic}".
+      
+      Video Transcript:
+      ${transcript}
+      
+      The notes should be well-structured, educational, and around 500-800 words.
+      Include key concepts, explanations, and examples from the transcript.
+      Format the notes in a clear, easy-to-read structure with bullet points and sections.`;
+      
+      const { text: summaryText } = await generateText({
+        model: google("gemini-2.0-flash-001"),
+        prompt: summaryPrompt,
+      });
+      summary = summaryText;
     }
 
     // Get the latest course data to ensure we're working with the most recent state
@@ -580,6 +611,7 @@ async function processChapter(
               ...chapter,
               videoId,
               quiz,
+              summary,
               loading: false,
               status: "success",
               error: undefined,

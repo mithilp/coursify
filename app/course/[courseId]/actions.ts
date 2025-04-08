@@ -77,18 +77,11 @@ export async function generateChatResponse(
     if (!unit || !chapter) {
       throw new Error("Chapter not found");
     }
-
-    // Get transcript if video exists
-    let transcript = "No transcript available";
-    if (chapter.videoId) {
-      const { transcript: videoTranscript, success } = await getYoutubeTranscript(chapter.videoId);
-      if (success && videoTranscript) {
-        transcript = videoTranscript;
-      } else {
-        console.warn(`[YouTubeAPI] Failed to get transcript for video ${chapter.videoId}`);
-      }
-    } else {
-      console.debug("[YouTubeAPI] No video ID available for this chapter");
+    
+    // Get summary if summary exists
+    let summary = "";
+    if (chapter.summary) {
+      summary = chapter.summary;
     }
 
     // Create a prompt that includes course context
@@ -98,7 +91,7 @@ Course Topic: ${courseData.courseTopic}
 Unit: ${unit.title}
 Chapter: ${chapter.title}
 Chapter Content: ${chapter.content || "No content available yet"}
-Video Transcript: ${transcript}
+Video Summary: ${summary}
 
 Student Question: ${userMessage}
 
