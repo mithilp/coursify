@@ -4,8 +4,15 @@ import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { courseSchema, CourseUnitInput, GeneratedCourse } from "../lib/schemas";
 import { db } from "../utils/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, getDoc, setDoc, doc, updateDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
+import { auth } from "@clerk/nextjs/server";
+
+interface ProfileCourses {
+  courses: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 /**
  * Server action to generate course content with AI
@@ -74,11 +81,37 @@ export async function generateChapters(
  */
 export async function saveCourseToFirebase(courseData: GeneratedCourse) {
   try {
+    console.debug("cheCKING")
+    const { userId } = await auth();
+    console.debug("User ID from auth:", userId);
+
     const coursesCollection = collection(db, "courses");
     const docRef = await addDoc(coursesCollection, {
       ...courseData,
       createdAt: new Date().toISOString(),
+      userId: userId,
     });
+
+    if (!userId) throw new Error("User ID is required");
+    const profileRef = doc(db, "profileCourses", userId);
+    
+    // Check if document exists
+    const profileDoc = await getDoc(profileRef);
+    if (profileDoc.exists()) {
+      // Document exists, update the courses array
+      const currentCourses = profileDoc.data().courses || [];
+      await updateDoc(profileRef, {
+        courses: [...currentCourses, docRef.id],
+        updatedAt: new Date().toISOString()
+      });
+    } else {
+      // Document doesn't exist, create it with the course
+      await setDoc(profileRef, {
+        courses: [docRef.id],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    }
 
     // Revalidate the create page
     revalidatePath("/create/[courseId]");
@@ -86,6 +119,54 @@ export async function saveCourseToFirebase(courseData: GeneratedCourse) {
     return { success: true, courseId: docRef.id };
   } catch (error) {
     console.error("Error saving course to Firebase:", error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+// Add course to user's enrolled courses
+export async function enrollInCourse(userId: string, courseId: string) {
+  try {
+    const profileRef = doc(db, "profileCourses", userId);
+    const profileDoc = await getDoc(profileRef);
+
+    if (profileDoc.exists()) {
+      // Document exists, update the courses array
+      const currentCourses = profileDoc.data().courses || [];
+      if (!currentCourses.includes(courseId)) {
+        await updateDoc(profileRef, {
+          courses: [...currentCourses, courseId],
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } else {
+      // Document doesn't exist, create it with the course
+      await setDoc(profileRef, {
+        courses: [courseId],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error enrolling in course:", error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+// Get user's enrolled courses
+export async function getUserCourses(userId: string) {
+  try {
+    const profileRef = doc(db, "profileCourses", userId);
+    const profileDoc = await getDoc(profileRef);
+
+    if (profileDoc.exists()) {
+      return { success: true, courses: profileDoc.data().courses || [] };
+    } else {
+      return { success: true, courses: [] };
+    }
+  } catch (error) {
+    console.error("Error getting user courses:", error);
     return { success: false, error: (error as Error).message };
   }
 }

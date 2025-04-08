@@ -16,7 +16,7 @@ import { CourseDB } from "@/app/lib/schemas";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { db } from "@/app/utils/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 
 interface CourseConfirmationProps {
   course: CourseDB;
@@ -55,20 +55,29 @@ export function CourseConfirmation({
   };
 
   // Publish or save the course
-  const handleConfirmCourse = () => {
-    startTransition(() => {
-      if (course.isPublic) {
-        publishCourse(course.id).then((result) => {
+  const handleConfirmCourse = async () => {
+    startTransition(async () => {
+      try {
+        // Update the course document with privacy status
+        const courseRef = doc(db, "courses", course.id);
+        await updateDoc(courseRef, {
+          isPublic: course.isPublic,
+          updatedAt: new Date().toISOString()
+        });
+
+        if (course.isPublic) {
+          const result = await publishCourse(course.id);
           if (result.success) {
             router.push(`/course/${course.id}`);
           }
-        });
-      } else {
-        saveCourseAsDraft(course.id).then((result) => {
+        } else {
+          const result = await saveCourseAsDraft(course.id);
           if (result.success) {
             router.push(`/course/${course.id}`);
           }
-        });
+        }
+      } catch (error) {
+        console.error("Error updating course privacy:", error);
       }
     });
   };

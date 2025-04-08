@@ -9,7 +9,7 @@ import { db } from "@/app/utils/firebase";
 import { doc, getDoc, collection, setDoc, updateDoc } from "firebase/firestore";
 import { GeneratedCourse, CourseDB, Quiz, QuizQuestion } from "@/app/lib/schemas";
 import { fetchYouTubeApi, youtubeApiKeyManager } from "@/app/utils/youtube-api";
-
+import { auth } from "@clerk/nextjs/server";
 // Get course data from Firebase
 export async function getCourse(courseId: string) {
   try {
@@ -143,7 +143,7 @@ export async function generateChapterContent(
       }
       return unit;
     });
-
+    
     // Update course in Firebase
     await updateDoc(courseRef, {
       units: updatedUnits,
