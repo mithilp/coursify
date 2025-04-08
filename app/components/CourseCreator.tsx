@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -11,17 +11,16 @@ import {
 } from "@/app/actions/courseActions";
 import { CourseUnitInput } from "@/app/lib/schemas";
 import { useRouter } from "next/navigation";
-import { Skeleton } from "@/components/ui/skeleton";
 
 // Loading button that handles its own loading state
 function SubmitButton({ isGenerating }: { isGenerating: boolean }) {
   return (
     <Button className="w-full" size="lg" type="submit" disabled={isGenerating}>
       {isGenerating ? (
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4 rounded-full" />
-          <Skeleton className="h-4 w-16" />
-        </div>
+        <>
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          Generating...
+        </>
       ) : (
         "Let's Go!"
       )}
@@ -39,7 +38,6 @@ export default function CourseCreator({ isSignedIn }: CourseCreatorProps) {
   const [courseUnits, setCourseUnits] = useState<CourseUnitInput[]>([
     { id: "1", title: "" },
     { id: "2", title: "" },
-    { id: "3", title: "" },
   ]);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,11 +88,8 @@ export default function CourseCreator({ isSignedIn }: CourseCreatorProps) {
       return;
     }
 
+    // Units are now optional - we don't validate that there must be at least one
     const validUnits = courseUnits.filter((unit) => unit.title.trim() !== "");
-    if (validUnits.length === 0) {
-      setError("Please add at least one unit.");
-      return;
-    }
 
     setError(null);
     setIsGenerating(true);
@@ -122,7 +117,7 @@ export default function CourseCreator({ isSignedIn }: CourseCreatorProps) {
   };
 
   return (
-    <Card className="py-4 space-y-8">
+    <Card className="py-4">
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-8">
           <div>
@@ -143,7 +138,9 @@ export default function CourseCreator({ isSignedIn }: CourseCreatorProps) {
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium">Course Units</label>
+              <label className="block text-sm font-medium">
+                Course Units <span className="text-muted-foreground text-xs">(optional)</span>
+              </label>
               <Button
                 type="button"
                 variant="outline"
@@ -154,6 +151,9 @@ export default function CourseCreator({ isSignedIn }: CourseCreatorProps) {
                 <PlusCircle className="h-4 w-4" /> Add Unit
               </Button>
             </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Adding units helps structure your course but is optional. If none are provided, we'll generate the structure for you.
+            </p>
 
             <div className="space-y-3">
               {courseUnits.map((unit, index) => (
@@ -185,9 +185,8 @@ export default function CourseCreator({ isSignedIn }: CourseCreatorProps) {
             </div>
           )}
 
-          <CardFooter className="px-0 pt-4">
+
             <SubmitButton isGenerating={isGenerating} />
-          </CardFooter>
         </form>
       </CardContent>
     </Card>

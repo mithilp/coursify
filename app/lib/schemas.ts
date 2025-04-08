@@ -38,13 +38,6 @@ export const courseSchema = z.object({
 // DATABASE TYPES
 // ---------------------
 
-// View count interface
-export interface ViewCount {
-  total: number;
-  uniqueUsers: string[]; // Array of user IDs or session IDs who viewed the course
-  lastViewed: string;    // ISO date string of last view
-}
-
 // Quiz types
 export interface QuizQuestion {
   question: string;
@@ -63,7 +56,6 @@ export interface ChapterDB {
   title: string;
   description?: string;
   content?: string;
-  summary?: string;
   loading?: boolean;
   views?: number;
   status?: "idle" | "loading" | "success" | "error";
@@ -91,7 +83,9 @@ export interface CourseDB {
   loading?: boolean;
   isPublic?: boolean;
   published?: boolean;
-  viewCount?: ViewCount; // Added view count tracking
+  viewCount?: {
+    total: number;
+  };
 }
 
 // ---------------------
