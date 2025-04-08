@@ -81,9 +81,25 @@ export async function saveCourseToFirebase(courseData: GeneratedCourse) {
 
     if (!userId) throw new Error("User ID is required");
     const profileRef = doc(db, "profileCourses", userId);
-    await setDoc(profileRef, {
-      courses: [docRef.id],
-    }, { merge: true });
+    
+    // Check if document exists
+    const profileDoc = await getDoc(profileRef);
+    if (profileDoc.exists()) {
+      // Document exists, update the courses array
+      const currentCourses = profileDoc.data().courses || [];
+      await updateDoc(profileRef, {
+        courses: [...currentCourses, docRef.id],
+        updatedAt: new Date().toISOString()
+      });
+    } else {
+      // Document doesn't exist, create it with the course
+      await setDoc(profileRef, {
+        courses: [docRef.id],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    }
+
     // Revalidate the create page
     revalidatePath("/create/[courseId]");
 
