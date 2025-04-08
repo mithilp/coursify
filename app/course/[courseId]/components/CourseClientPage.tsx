@@ -87,7 +87,7 @@ export function CourseClientPage({
   const toggleQuiz = () => setShowQuiz(!showQuiz);
 
   return (
-    <div className="flex h-[calc(100vh-64px)] mt-16">
+    <div className="flex h-[calc(100vh-64px)]">
       {/* Mobile sidebar toggle */}
       <Button
         variant="ghost"

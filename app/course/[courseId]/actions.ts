@@ -8,6 +8,7 @@ import { db } from "@/app/utils/firebase";
 import { doc, getDoc, collection, setDoc, updateDoc } from "firebase/firestore";
 import { GeneratedCourse, CourseDB, Quiz, QuizQuestion } from "@/app/lib/schemas";
 import { YoutubeTranscript } from "youtube-transcript";
+import { fetchYouTubeApi, youtubeApiKeyManager } from "@/app/utils/youtube-api";
 
 // Cache for transcripts
 const transcriptCache = new Map<string, string>();
@@ -17,7 +18,21 @@ async function getYoutubeTranscript(videoId: string) {
   try {
     // Check cache first
     if (transcriptCache.has(videoId)) {
+      console.debug(`[YouTubeAPI] Using cached transcript for video ${videoId}`);
       return { transcript: transcriptCache.get(videoId)!, success: true };
+    }
+
+    console.debug(`[YouTubeAPI] Fetching transcript for video ${videoId}`);
+    
+    // Try to get more info about the video first
+    const videoDetails = await fetchYouTubeApi<any>(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}`
+    );
+    
+    if (videoDetails?.items?.[0]) {
+      console.debug(`[YouTubeAPI] Video title: ${videoDetails.items[0].snippet.title}`);
+    } else {
+      console.warn(`[YouTubeAPI] Could not fetch video details for ${videoId}`);
     }
 
     const transcriptArr = await YoutubeTranscript.fetchTranscript(videoId, {
@@ -31,9 +46,10 @@ async function getYoutubeTranscript(videoId: string) {
     // Cache the transcript
     transcriptCache.set(videoId, transcript);
     
+    console.debug(`[YouTubeAPI] Successfully fetched transcript for video ${videoId} (${transcript.length} chars)`);
     return { transcript, success: true };
   } catch (e) {
-    console.error("Error fetching transcript:", e);
+    console.error("[YouTubeAPI] Error fetching transcript:", e);
     return { transcript: "", success: false };
   }
 }
@@ -68,7 +84,11 @@ export async function generateChatResponse(
       const { transcript: videoTranscript, success } = await getYoutubeTranscript(chapter.videoId);
       if (success && videoTranscript) {
         transcript = videoTranscript;
+      } else {
+        console.warn(`[YouTubeAPI] Failed to get transcript for video ${chapter.videoId}`);
       }
+    } else {
+      console.debug("[YouTubeAPI] No video ID available for this chapter");
     }
 
     // Create a prompt that includes course context

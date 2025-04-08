@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/app/utils/firebase";
 import { doc, getDoc, collection, setDoc, updateDoc } from "firebase/firestore";
 import { GeneratedCourse, CourseDB, Quiz, QuizQuestion } from "@/app/lib/schemas";
+import { fetchYouTubeApi, youtubeApiKeyManager } from "@/app/utils/youtube-api";
 
 // Get course data from Firebase
 export async function getCourse(courseId: string) {
@@ -271,22 +272,23 @@ async function searchYouTubeVideo(query: string): Promise<string | null> {
       .filter(word => word.length > 2) // Remove short words
       .join(' ');
 
-    console.debug(`Searching YouTube for: "${cleanQuery}"`);
+    console.debug(`[YouTubeAPI] Searching YouTube for: "${cleanQuery}"`);
+    console.debug(`[YouTubeAPI] API Key status: ${JSON.stringify(youtubeApiKeyManager.getKeyStatuses())}`);
 
-    const response = await fetch(
+    // Use our enhanced API fetch utility
+    const data = await fetchYouTubeApi<any>(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(
         cleanQuery
-      )}&type=video&key=${process.env.YOUTUBE_API}&maxResults=5&videoDuration=any&videoEmbeddable=true&relevanceLanguage=en`
+      )}&type=video&maxResults=5&videoDuration=any&videoEmbeddable=true&relevanceLanguage=en`
     );
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('YouTube API Error:', errorData);
-      throw new Error(`YouTube API error: ${response.status} ${response.statusText}`);
+    // Check if we got a response
+    if (!data) {
+      console.error('[YouTubeAPI] Failed to get YouTube search results - all API keys may be exhausted');
+      return null;
     }
 
-    const data = await response.json();
-    console.debug(`YouTube search results count: ${data.items?.length || 0}`);
+    console.debug(`[YouTubeAPI] Search results count: ${data.items?.length || 0}`);
 
     if (data.items && data.items.length > 0) {
       // Try to find the most relevant video
@@ -303,14 +305,14 @@ async function searchYouTubeVideo(query: string): Promise<string | null> {
         return matchingWords.length >= Math.ceil(queryWords.length * 0.5); // At least 50% match
       }) || data.items[0]; // Fallback to first result if no good match
 
-      console.debug(`Selected video: ${video.snippet.title}`);
+      console.debug(`[YouTubeAPI] Selected video: ${video.snippet.title} (ID: ${video.id.videoId})`);
       return video.id.videoId;
     }
 
-    console.warn('No videos found for query:', cleanQuery);
+    console.warn('[YouTubeAPI] No videos found for query:', cleanQuery);
     return null;
   } catch (error) {
-    console.error("Error searching YouTube:", error);
+    console.error("[YouTubeAPI] Error searching YouTube:", error);
     return null;
   }
 }
@@ -495,15 +497,57 @@ async function processChapter(
     
     if (!videoId) {
       // Instead of throwing an error, we'll try a more generic search
-      console.warn(`No video found for "${chapter.title}", trying with course topic`);
+      console.warn(`[YouTubeAPI] No video found for "${chapter.title}", trying with course topic`);
       const courseTopic = courseData.courseTopic;
       videoId = await searchYouTubeVideo(`${courseTopic} ${chapter.title}`);
       
       if (!videoId) {
-        console.error(`No video found for chapter "${chapter.title}" in course "${courseTopic}"`);
-        // Instead of failing, we'll continue with a default video ID
-        // You might want to use a placeholder video or handle this differently
-        return { success: false, chapterId, error: "No suitable video found" };
+        console.error(`[YouTubeAPI] No video found for chapter "${chapter.title}" in course "${courseTopic}"`);
+        
+        // Update the chapter with the error
+        const errorUnits = courseData.units.map((unit) => {
+          if (unit.id === unitId) {
+            const errorChapters = unit.chapters.map((chapter) => {
+              if (chapter.id === chapterId) {
+                return {
+                  ...chapter,
+                  loading: false,
+                  error: "No suitable video found - YouTube API keys may be exhausted",
+                  status: "error",
+                };
+              }
+              return chapter;
+            });
+            return {
+              ...unit,
+              chapters: errorChapters,
+            };
+          }
+          return unit;
+        });
+        
+        // Update course in Firebase with error status
+        await updateDoc(courseRef, {
+          units: errorUnits,
+          updatedAt: new Date().toISOString(),
+        });
+        
+        return { success: false, chapterId, error: "No suitable video found - YouTube API keys may be exhausted" };
+      }
+    }
+
+    // If we have a videoId, try to get more details about the video (title, etc)
+    if (videoId) {
+      console.debug(`[YouTubeAPI] Fetching details for video ID: ${videoId}`);
+      
+      // Use enhanced API utility for video details
+      const videoDetails = await fetchYouTubeApi<any>(
+        `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}`
+      );
+      
+      if (videoDetails?.items?.[0]) {
+        const video = videoDetails.items[0];
+        console.debug(`[YouTubeAPI] Video title: ${video.snippet.title}, Duration: ${video.contentDetails.duration}`);
       }
     }
 
@@ -512,14 +556,7 @@ async function processChapter(
     
     let quiz: Quiz;
     if (!successTranscript || !transcript) {
-      console.warn("No transcript available, generating quiz from titles");
-      // Get video title from YouTube API
-      // const videoResponse = await fetch(
-      //   `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${process.env.YOUTUBE_API_KEY}`
-      // );
-      // const videoData = await videoResponse.json();
-      // const videoTitle = videoData.items?.[0]?.snippet?.title || "Unknown Video";
-
+      console.warn("[YouTubeAPI] No transcript available, generating quiz from titles");
       // Generate quiz from titles
       quiz = await generateQuizFromTitles(unit.title, chapter.title);
     } else {
@@ -544,6 +581,8 @@ async function processChapter(
               videoId,
               quiz,
               loading: false,
+              status: "success",
+              error: undefined,
             };
           }
           return chapter;
@@ -568,6 +607,47 @@ async function processChapter(
     return { success: true, chapterId };
   } catch (error) {
     console.error(`Error generating chapter ${chapterId}:`, error);
+    
+    try {
+      // Update the chapter with the error
+      const courseRef = doc(db, "courses", courseId);
+      const courseSnap = await getDoc(courseRef);
+      
+      if (courseSnap.exists()) {
+        const courseData = courseSnap.data() as GeneratedCourse;
+        
+        // Update the units with the error
+        const errorUnits = courseData.units.map((unit) => {
+          if (unit.id === unitId) {
+            const errorChapters = unit.chapters.map((chapter) => {
+              if (chapter.id === chapterId) {
+                return {
+                  ...chapter,
+                  loading: false,
+                  error: (error as Error).message,
+                  status: "error",
+                };
+              }
+              return chapter;
+            });
+            return {
+              ...unit,
+              chapters: errorChapters,
+            };
+          }
+          return unit;
+        });
+        
+        // Update course in Firebase with error status
+        await updateDoc(courseRef, {
+          units: errorUnits,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch (updateError) {
+      console.error(`Failed to update error status for chapter ${chapterId}:`, updateError);
+    }
+    
     return { success: false, chapterId, error: (error as Error).message };
   }
 }
