@@ -4,6 +4,26 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { ChevronRight, ChevronDown, BookOpen } from "lucide-react";
 import { CourseDB, UnitDB, ChapterDB } from "@/app/lib/schemas";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+// Helper function to clean text
+function cleanText(text: string): string {
+  // Remove markdown syntax
+  let cleaned = text
+    .replace(/#{1,6}\s/g, '') // Remove headers
+    .replace(/\*\*/g, '') // Remove bold
+    .replace(/\*/g, '') // Remove italic
+    .replace(/`/g, '') // Remove code
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
+    .replace(/>/g, '') // Remove blockquotes
+    .replace(/-/g, '') // Remove list markers
+    .replace(/\n/g, ' ') // Replace newlines with spaces
+    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+    .trim();
+  
+  return cleaned;
+}
 
 interface ChapterContentProps {
   course: CourseDB;
@@ -124,7 +144,7 @@ export default function ChapterContent({
                       {chapter.title}
                     </h3>
                     <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
-                      {chapter.description?.substring(0, 100) || "No description available"}...
+                      {chapter.summary ? cleanText(chapter.summary).substring(0, 100) + "..." : "No description available"}
                     </p>
                   </div>
                 </div>
@@ -244,11 +264,50 @@ export default function ChapterContent({
 
       {/* Chapter Content */}
       <div className="prose prose-slate dark:prose-invert max-w-4xl mx-auto">
-        {currentChapter.content ? (
-          <div dangerouslySetInnerHTML={{ __html: currentChapter.content }} />
-        ) : (
-          <p className="text-muted-foreground">No content available yet.</p>
-        )}
+        {currentChapter.summary ? (
+          <div className="space-y-6">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ children }) => (
+                  <h1 className="text-2xl font-bold mb-4">{children}</h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="text-xl font-semibold mb-3 mt-6">{children}</h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="text-lg font-medium mb-2 mt-4">{children}</h3>
+                ),
+                p: ({ children }) => (
+                  <p className="mb-4 leading-relaxed">{children}</p>
+                ),
+                ul: ({ children }) => (
+                  <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>
+                ),
+                li: ({ children }) => (
+                  <li className="mb-1">{children}</li>
+                ),
+                strong: ({ children }) => (
+                  <strong className="font-semibold">{children}</strong>
+                ),
+                em: ({ children }) => (
+                  <em className="italic">{children}</em>
+                ),
+                code: ({ children }) => (
+                  <code className="bg-muted px-2 py-1 rounded text-sm font-mono">{children}</code>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-4 border-primary pl-4 italic my-4">{children}</blockquote>
+                ),
+              }}
+            >
+              {currentChapter.summary}
+            </ReactMarkdown>
+          </div>
+        ) : null}
       </div>
     </div>
   );

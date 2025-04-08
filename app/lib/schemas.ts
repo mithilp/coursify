@@ -56,6 +56,7 @@ export interface ChapterDB {
   title: string;
   description?: string;
   content?: string;
+  summary?: string;
   loading?: boolean;
   views?: number;
   status?: "idle" | "loading" | "success" | "error";
