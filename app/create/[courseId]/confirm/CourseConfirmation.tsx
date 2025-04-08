@@ -80,8 +80,8 @@ export function CourseConfirmation({
     if (chapter.loading) {
       return (
         <div className="flex items-center">
-          <Loader2 className="h-4 w-4 mr-2 animate-spin text-amber-500" />
-          <span className="text-xs text-amber-500">Loading...</span>
+          <Skeleton className="h-4 w-4 rounded-full mr-2" />
+          <Skeleton className="h-4 w-16" />
         </div>
       );
     } else if (chapter.error) {
@@ -230,10 +230,10 @@ export function CourseConfirmation({
                 onClick={handleConfirmCourse}
               >
                 {isPending || course.loading ? (
-                  <>
-                    <Loader2 size={16} className="mr-2 animate-spin" />
-                    Loading...
-                  </>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded-full" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
                 ) : (
                   <>
                     {course.isPublic ? "Confirm & Publish" : "Confirm & Save"}

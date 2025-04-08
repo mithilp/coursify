@@ -7,6 +7,7 @@ import { BookOpen, PlusCircle, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "./DarkModeSwitcher";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface NavbarProps {
   isSignedIn: boolean;
@@ -159,7 +160,7 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
                   </div>
                   <div onClick={closeMobileMenu} className="relative">
                     {!isLoaded && (
-                      <div className="w-8 h-8 rounded-full bg-muted animate-pulse absolute"></div>
+                      <Skeleton className="w-8 h-8 rounded-full absolute" />
                     )}
                     <UserButton />
                   </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PlusCircle, Trash2, Loader2 } from "lucide-react";
+import { PlusCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -11,16 +11,17 @@ import {
 } from "@/app/actions/courseActions";
 import { CourseUnitInput } from "@/app/lib/schemas";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Loading button that handles its own loading state
 function SubmitButton({ isGenerating }: { isGenerating: boolean }) {
   return (
     <Button className="w-full" size="lg" type="submit" disabled={isGenerating}>
       {isGenerating ? (
-        <>
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Generating...
-        </>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <Skeleton className="h-4 w-16" />
+        </div>
       ) : (
         "Let's Go!"
       )}

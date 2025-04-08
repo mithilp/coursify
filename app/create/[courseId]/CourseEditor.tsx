@@ -38,6 +38,7 @@ import {
   updateCourse,
 } from "./actions";
 import { CourseDB } from "@/app/lib/schemas";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Types for UI component usage
 interface Chapter {
@@ -430,10 +431,7 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
                           {isGenerating && (
                             <div className="w-7 h-7 flex items-center justify-center">
                               {chapter.status === "loading" && (
-                                <Loader2
-                                  size={14}
-                                  className="animate-spin text-muted-foreground"
-                                />
+                                <Skeleton className="h-4 w-4 rounded-full" />
                               )}
                               {chapter.status === "success" && (
                                 <Check size={14} className="text-green-500" />
