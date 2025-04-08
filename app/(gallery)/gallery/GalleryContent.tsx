@@ -121,7 +121,7 @@ export default function GalleryContent({ courses, error, success }: GalleryConte
   if (!success || !courses) {
     return (
       <div className="container mx-auto px-4 py-12 max-w-6xl">
-        <div className="flex flex-col items-center text-center mb-10">
+        <div className="flex flex-col items-center text-center mb-4">
           <Skeleton className="h-12 w-12 rounded-full mb-4" />
           <Skeleton className="h-10 w-48 mb-2" />
           <Skeleton className="h-6 w-64 mb-6" />
@@ -158,7 +158,7 @@ export default function GalleryContent({ courses, error, success }: GalleryConte
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
-      <div className="flex flex-col items-center text-center mb-10">
+      <div className="flex flex-col items-center text-center mb-4">
         <BookCopy className="h-12 w-12 mb-4" />
         <h1 className="text-4xl font-bold mb-2">Course Gallery</h1>
         <p className="text-xl text-muted-foreground mb-6">
