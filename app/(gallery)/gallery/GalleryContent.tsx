@@ -1,6 +1,6 @@
 "use client";
 
-import { BookCopy, BookOpen, Clock } from "lucide-react";
+import { BookCopy, BookOpen, Clock, Eye } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CourseDB } from "@/app/lib/schemas";
@@ -67,9 +67,17 @@ export default function GalleryContent({ courses, error, success }: GalleryConte
                 <p className="text-sm text-muted-foreground line-clamp-3">
                   {course.description || "No description available"}
                 </p>
-                <div className="flex items-center text-xs text-muted-foreground pb-4">
-                  <Clock className="h-3 w-3 mr-1" />
-                  {formatDistanceToNow(new Date(course.createdAt), { addSuffix: true })}
+                <div className="flex items-center justify-between text-xs text-muted-foreground pb-4">
+                  <div className="flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {formatDistanceToNow(new Date(course.createdAt), { addSuffix: true })}
+                  </div>
+                  {course.viewCount && (
+                    <div className="flex items-center">
+                      <Eye className="h-3 w-3 mr-1" />
+                      {course.viewCount.total} view{course.viewCount.total !== 1 && 's'}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

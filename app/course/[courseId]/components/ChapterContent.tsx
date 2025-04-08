@@ -116,6 +116,17 @@ export default function ChapterContent({
           <h1 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">
             Unit {unitIndex + 1}: {currentUnit.title}
           </h1>
+          <div className="flex items-center gap-2 mb-3">
+            {course.viewCount && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <BookOpen className="h-3 w-3 mr-1" />
+                <span>{course.viewCount.total} views</span>
+                {course.viewCount.uniqueUsers.length > 0 && (
+                  <span className="ml-2">({course.viewCount.uniqueUsers.length} unique viewers)</span>
+                )}
+              </div>
+            )}
+          </div>
           {currentUnit.description && (
             <p className="text-muted-foreground text-sm md:text-base mb-6">
               {currentUnit.description}
@@ -242,9 +253,18 @@ export default function ChapterContent({
             (chapter) => chapter.id === currentChapter.id
           ) + 1}
         </div>
-        <h1 className="text-xl md:text-3xl font-bold">
+        <h1 className="text-xl md:text-3xl font-bold mb-2">
           {currentChapter.title}
         </h1>
+        {course.viewCount && (
+          <div className="flex items-center text-xs text-muted-foreground mb-3">
+            <BookOpen className="h-3 w-3 mr-1" />
+            <span>{course.viewCount.total} views</span>
+            {course.viewCount.uniqueUsers.length > 0 && (
+              <span className="ml-2">({course.viewCount.uniqueUsers.length} unique viewers)</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Video Embed */}

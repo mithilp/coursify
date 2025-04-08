@@ -65,6 +65,11 @@ export async function saveCourseToFirebase(courseData: GeneratedCourse) {
     const docRef = await addDoc(coursesCollection, {
       ...courseData,
       createdAt: new Date().toISOString(),
+      viewCount: {
+        total: 0,
+        uniqueUsers: [],
+        lastViewed: new Date().toISOString()
+      }
     });
 
     // Revalidate the create page
