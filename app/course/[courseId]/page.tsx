@@ -4,6 +4,7 @@ import { db } from "@/app/utils/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { notFound } from "next/navigation";
 import { CourseDB } from "@/app/lib/schemas";
+import ViewTracker from "./components/ViewTracker";
 
 export default async function CoursePage({
   params,
@@ -27,11 +28,16 @@ export default async function CoursePage({
   const courseData = { id: courseId, ...courseDoc.data() } as CourseDB;
 
   return (
-    <CourseClientPage
-      courseId={courseId}
-      unitParam={unitParam}
-      chapterParam={chapterParam}
-      initialCourse={courseData}
-    />
+    <>
+      {/* Client component to track views */}
+      <ViewTracker courseId={courseId} />
+      
+      <CourseClientPage
+        courseId={courseId}
+        unitParam={unitParam}
+        chapterParam={chapterParam}
+        initialCourse={courseData}
+      />
+    </>
   );
 }
