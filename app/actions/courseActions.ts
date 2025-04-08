@@ -18,28 +18,41 @@ export async function generateChapters(
     // Filter out empty units
     const validUnits = courseUnits.filter((unit) => unit.title.trim() !== "");
 
-    if (validUnits.length === 0) {
-      throw new Error("At least one unit is required");
+    // Prepare prompt based on whether units are provided
+    let prompt = "";
+    
+    if (validUnits.length > 0) {
+      // Prepare units for the prompt
+      const unitsString = validUnits
+        .map((unit, index) => `Unit ${index + 1}: ${unit.title}`)
+        .join("\n");
+      
+      prompt = `Create a course on "${courseTopic}" with the following units:\n${unitsString}\n\nFor each unit, generate 3-5 chapters with brief descriptions. The course should be educational and well-structured.`;
+    } else {
+      // No units provided, let the AI generate the structure
+      prompt = `Create a comprehensive course on "${courseTopic}". Generate 4-5 unites units and 3-5 chapters per unit with brief descriptions. The course should be educational and well-structured.`;
     }
-
-    // Prepare units for the prompt
-    const unitsString = validUnits
-      .map((unit, index) => `Unit ${index + 1}: ${unit.title}`)
-      .join("\n");
 
     // Using Zod schema with generateObject
     const { object } = await generateObject<GeneratedCourse>({
       model: google("gemini-2.0-flash-001", { structuredOutputs: true }),
-      prompt: `Create a course on "${courseTopic}" with the following units:\n${unitsString}\n\nFor each unit, generate 3-5 chapters with brief descriptions. The course should be educational and well-structured.`,
+      prompt,
       schema: courseSchema,
     });
 
-    // Merge the original unit IDs with the generated content
+    // If original units were provided, merge the original unit IDs with the generated content
     const unitsWithIds = object.units.map((generatedUnit, index) => {
-      const originalUnit = validUnits[index] || { id: `generated-${index}` };
+      // For provided units, keep their original IDs
+      if (validUnits[index]) {
+        return {
+          ...generatedUnit,
+          id: validUnits[index].id,
+        };
+      }
+      // For AI-generated units, create new IDs
       return {
         ...generatedUnit,
-        id: originalUnit.id,
+        id: `generated-${index}`,
       };
     });
 
@@ -65,11 +78,6 @@ export async function saveCourseToFirebase(courseData: GeneratedCourse) {
     const docRef = await addDoc(coursesCollection, {
       ...courseData,
       createdAt: new Date().toISOString(),
-      viewCount: {
-        total: 0,
-        uniqueUsers: [],
-        lastViewed: new Date().toISOString()
-      }
     });
 
     // Revalidate the create page
