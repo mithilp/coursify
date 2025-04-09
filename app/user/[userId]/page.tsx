@@ -5,9 +5,9 @@ import { BookCopy } from "lucide-react";
 import { CourseCard } from "@/components/CourseCard";
 
 interface UserProfilePageProps {
-  params: {
+  params: Promise<{
     userId: string;
-  };
+  }>;
 }
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
