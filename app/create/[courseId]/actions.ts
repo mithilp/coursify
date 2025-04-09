@@ -35,6 +35,7 @@ export async function updateCourse(
   courseId: string,
   courseData: Partial<GeneratedCourse>
 ) {
+  console.log("Updating course:", courseId, courseData);
   try {
     const courseRef = doc(db, "courses", courseId);
     const courseSnap = await getDoc(courseRef);
@@ -71,6 +72,7 @@ export async function updateCourse(
       await updateDoc(courseRef, {
         units: updatedUnits,
         updatedAt: new Date().toISOString(),
+        userId: courseData.userId || "",
       });
 
       revalidatePath(`/create/${courseId}`);
@@ -82,6 +84,7 @@ export async function updateCourse(
     await updateDoc(courseRef, {
       ...courseData,
       updatedAt: new Date().toISOString(),
+      userId: courseData.userId || "",
     });
 
     revalidatePath(`/create/${courseId}`);

@@ -33,6 +33,7 @@ export const courseSchema = z.object({
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
   isPublic: z.boolean().optional().default(false),
+  userId: z.string().optional(),
 });
 
 // ---------------------

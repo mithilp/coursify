@@ -40,6 +40,7 @@ import {
 import { CourseDB } from "@/app/lib/schemas";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useUser } from "@clerk/nextjs";
 
 // Types for UI component usage
 interface Chapter {
@@ -241,12 +242,17 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
   };
 
   // Handle "Generate Course" button click
-  const handleGenerateCourse = async () => {
+  const handleGenerateCourse = async (userId: string) => {
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
     setIsGenerating(true);
 
     try {
       // First, save the current course structure to Firestore
       const saveResult = await updateCourse(course.id, {
+        userId: userId,
         units: course.units.map((unit) => ({
           id: unit.id,
           title: unit.title,
@@ -301,6 +307,8 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
     const unit = course.units.find((u) => u.id === unitId);
     return unit?.title || `Unit ${unitId}`;
   };
+
+  const user = useUser();
 
   return (
     <div className="container mx-auto px-3 py-6 max-w-6xl">
@@ -524,7 +532,7 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
 
               <Button
                 className="w-full mt-4"
-                onClick={handleGenerateCourse}
+                onClick={() => handleGenerateCourse(user?.user?.id || "")}
                 disabled={
                   !course.courseTopic.trim() || isGenerating || isPending
                 }
