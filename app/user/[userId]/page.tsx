@@ -1,22 +1,8 @@
 import { notFound } from "next/navigation";
 import { db } from "../../utils/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import CourseCard from "../../components/CourseCard";
-
-// Types
-type CourseCreator = {
-  userId: string;
-  name: string;
-};
-
-type Course = {
-  id: string;
-  title: string;
-  shortDescription?: string;
-  createdBy: CourseCreator;
-  units: any[];
-  views?: number;
-};
+import { BookCopy } from "lucide-react";
+import { CourseCard } from "@/components/CourseCard";
 
 interface UserProfilePageProps {
   params: Promise<{
@@ -63,25 +49,19 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
   const validCourses = courses.filter(Boolean);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Courses</h1>
-        <div className="grid gap-6 md:grid-cols-2">
-          {validCourses.map((course: any) => (
-            <CourseCard
-              key={course.id}
-              id={course.id}
-              title={course.courseTopic}
-              shortDescription={course.description}
-              createdBy={{
-                userId: userId,
-                name: course.createdBy?.name || "Unknown"
-              }}
-              units={course.units || []}
-              views={course.views || 0}
-            />
-          ))}
-        </div>
+    <div className="container mx-auto px-4 py-12 max-w-6xl">
+      <div className="flex flex-col items-center text-center mb-10">
+        <BookCopy className="h-12 w-12 mb-4" />
+        <h1 className="text-4xl font-bold mb-2">Your Courses</h1>
+        <p className="text-xl text-muted-foreground">
+          Manage and organize your courses
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {validCourses.map((course: any) => (
+          <CourseCard key={course.id} course={course} />
+        ))}
       </div>
     </div>
   );
