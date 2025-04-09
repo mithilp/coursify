@@ -267,15 +267,7 @@ export async function generateFullCourse(courseId: string) {
 
 async function searchYouTubeVideo(query: string): Promise<string | null> {
   try {
-    // Clean and prepare the search query
-    const cleanQuery = query
-      .replace(/[^\w\s]/g, "") // Remove special characters
-      .trim()
-      .split(" ")
-      .filter((word) => word.length > 2) // Remove short words
-      .join(" ");
-
-    console.debug(`[YouTubeAPI] Searching YouTube for: "${cleanQuery}"`);
+    console.debug(`[YouTubeAPI] Searching YouTube for: "${query}"`);
     console.debug(
       `[YouTubeAPI] API Key status: ${JSON.stringify(
         youtubeApiKeyManager.getKeyStatuses()
@@ -285,8 +277,8 @@ async function searchYouTubeVideo(query: string): Promise<string | null> {
     // Use our enhanced API fetch utility
     const data = await fetchYouTubeApi<any>(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(
-        cleanQuery
-      )}&type=video&maxResults=5&videoDuration=any&videoEmbeddable=true&relevanceLanguage=en`
+        query
+      )}&type=video&maxResults=5&videoEmbeddable=true&relevanceLanguage=en`
     );
 
     // Check if we got a response
@@ -307,7 +299,7 @@ async function searchYouTubeVideo(query: string): Promise<string | null> {
         data.items.find((item: any) => {
           const title = item.snippet.title.toLowerCase();
           const description = item.snippet.description.toLowerCase();
-          const queryWords = cleanQuery.toLowerCase().split(" ");
+          const queryWords = query.toLowerCase().split(" ");
 
           // Check if title or description contains most of the query words
           const matchingWords = queryWords.filter(
@@ -323,7 +315,7 @@ async function searchYouTubeVideo(query: string): Promise<string | null> {
       return video.id.videoId;
     }
 
-    console.warn("[YouTubeAPI] No videos found for query:", cleanQuery);
+    console.warn("[YouTubeAPI] No videos found for query:", query);
     return null;
   } catch (error) {
     console.error("[YouTubeAPI] Error searching YouTube:", error);
