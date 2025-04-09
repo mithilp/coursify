@@ -69,7 +69,9 @@ export function CourseClientPage({
     return (
       <div className="flex flex-col items-center justify-center h-screen p-4">
         <h1 className="text-2xl font-bold mb-4">Course Not Found</h1>
-        <p className="text-muted-foreground mb-6">The course you're looking for doesn't exist.</p>
+        <p className="text-muted-foreground mb-6">
+          The course you're looking for doesn't exist.
+        </p>
         <Link href="/gallery">
           <Button>Back to Gallery</Button>
         </Link>
@@ -78,7 +80,9 @@ export function CourseClientPage({
   }
 
   // Find the selected unit and chapter
-  const selectedUnit = initialCourse.units.find((unit) => unit.id === unitParam) || initialCourse.units[0];
+  const selectedUnit =
+    initialCourse.units.find((unit) => unit.id === unitParam) ||
+    initialCourse.units[0];
   const selectedChapter = chapterParam
     ? selectedUnit.chapters.find((chapter) => chapter.id === chapterParam)
     : undefined;
@@ -102,7 +106,7 @@ export function CourseClientPage({
       <div
         className={`${
           showSidebar ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 fixed md:static inset-y-0 left-0 z-20 w-64 bg-background border-r transition-transform duration-200 ease-in-out`}
+        } md:translate-x-0 fixed md:static inset-y-0 left-0 z-20 w-80 bg-background border-r transition-transform duration-200 ease-in-out`}
       >
         <CourseSidebar
           course={initialCourse}
@@ -127,7 +131,7 @@ export function CourseClientPage({
         <div
           className={`${
             showQuiz ? "translate-x-0" : "translate-x-full"
-          } md:translate-x-0 fixed md:static inset-y-0 right-0 z-20 w-80 bg-background border-l transition-transform duration-200 ease-in-out`}
+          } md:translate-x-0 fixed md:static inset-y-0 right-0 z-20 w-96 bg-background border-l transition-transform duration-200 ease-in-out`}
         >
           <div className="h-full flex flex-col">
             <div className="flex items-center justify-between">
@@ -141,8 +145,8 @@ export function CourseClientPage({
               </Button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <InteractionsSidebar 
-                quiz={selectedChapter.quiz} 
+              <InteractionsSidebar
+                quiz={selectedChapter.quiz}
                 courseId={courseId}
                 unitId={selectedUnit.id}
                 chapterId={selectedChapter.id}

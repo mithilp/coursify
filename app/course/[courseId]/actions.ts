@@ -2,13 +2,11 @@
 
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { db } from "@/app/utils/firebase";
-import { doc, getDoc, collection, setDoc, updateDoc } from "firebase/firestore";
-import { GeneratedCourse, CourseDB, Quiz, QuizQuestion } from "@/app/lib/schemas";
+import { doc, getDoc } from "firebase/firestore";
+import { CourseDB } from "@/app/lib/schemas";
 import { YoutubeTranscript } from "youtube-transcript";
-import { fetchYouTubeApi, youtubeApiKeyManager } from "@/app/utils/youtube-api";
+import { fetchYouTubeApi } from "@/app/utils/youtube-api";
 
 // Cache for transcripts
 const transcriptCache = new Map<string, string>();
@@ -18,19 +16,23 @@ async function getYoutubeTranscript(videoId: string) {
   try {
     // Check cache first
     if (transcriptCache.has(videoId)) {
-      console.debug(`[YouTubeAPI] Using cached transcript for video ${videoId}`);
+      console.debug(
+        `[YouTubeAPI] Using cached transcript for video ${videoId}`
+      );
       return { transcript: transcriptCache.get(videoId)!, success: true };
     }
 
     console.debug(`[YouTubeAPI] Fetching transcript for video ${videoId}`);
-    
+
     // Try to get more info about the video first
     const videoDetails = await fetchYouTubeApi<any>(
       `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}`
     );
-    
+
     if (videoDetails?.items?.[0]) {
-      console.debug(`[YouTubeAPI] Video title: ${videoDetails.items[0].snippet.title}`);
+      console.debug(
+        `[YouTubeAPI] Video title: ${videoDetails.items[0].snippet.title}`
+      );
     } else {
       console.warn(`[YouTubeAPI] Could not fetch video details for ${videoId}`);
     }
@@ -42,11 +44,13 @@ async function getYoutubeTranscript(videoId: string) {
       .map((entry) => entry.text)
       .join(" ")
       .replaceAll("\n", " ");
-    
+
     // Cache the transcript
     transcriptCache.set(videoId, transcript);
-    
-    console.debug(`[YouTubeAPI] Successfully fetched transcript for video ${videoId} (${transcript.length} chars)`);
+
+    console.debug(
+      `[YouTubeAPI] Successfully fetched transcript for video ${videoId} (${transcript.length} chars)`
+    );
     return { transcript, success: true };
   } catch (e) {
     console.error("[YouTubeAPI] Error fetching transcript:", e);
@@ -77,7 +81,7 @@ export async function generateChatResponse(
     if (!unit || !chapter) {
       throw new Error("Chapter not found");
     }
-    
+
     // Get summary if summary exists
     let summary = "";
     if (chapter.summary) {
@@ -115,4 +119,4 @@ Response:`;
     console.error("Error generating chat response:", error);
     return { success: false, error: (error as Error).message };
   }
-} 
+}

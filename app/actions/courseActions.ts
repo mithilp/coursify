@@ -4,7 +4,14 @@ import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { courseSchema, CourseUnitInput, GeneratedCourse } from "../lib/schemas";
 import { db } from "../utils/firebase";
-import { collection, addDoc, getDoc, setDoc, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  getDoc,
+  setDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 
@@ -27,13 +34,13 @@ export async function generateChapters(
 
     // Prepare prompt based on whether units are provided
     let prompt = "";
-    
+
     if (validUnits.length > 0) {
       // Prepare units for the prompt
       const unitsString = validUnits
         .map((unit, index) => `Unit ${index + 1}: ${unit.title}`)
         .join("\n");
-      
+
       prompt = `Create a course on "${courseTopic}" with the following units:\n${unitsString}\n\nFor each unit, generate 3-5 chapters with brief descriptions. The course should be educational and well-structured.`;
     } else {
       // No units provided, let the AI generate the structure
@@ -81,7 +88,7 @@ export async function generateChapters(
  */
 export async function saveCourseToFirebase(courseData: GeneratedCourse) {
   try {
-    console.debug("cheCKING")
+    console.debug("cheCKING");
     const { userId } = await auth();
     console.debug("User ID from auth:", userId);
 
@@ -92,25 +99,26 @@ export async function saveCourseToFirebase(courseData: GeneratedCourse) {
       userId: userId,
     });
 
-    if (!userId) throw new Error("User ID is required");
-    const profileRef = doc(db, "profileCourses", userId);
-    
-    // Check if document exists
-    const profileDoc = await getDoc(profileRef);
-    if (profileDoc.exists()) {
-      // Document exists, update the courses array
-      const currentCourses = profileDoc.data().courses || [];
-      await updateDoc(profileRef, {
-        courses: [...currentCourses, docRef.id],
-        updatedAt: new Date().toISOString()
-      });
-    } else {
-      // Document doesn't exist, create it with the course
-      await setDoc(profileRef, {
-        courses: [docRef.id],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+    if (userId) {
+      const profileRef = doc(db, "profileCourses", userId);
+
+      // Check if document exists
+      const profileDoc = await getDoc(profileRef);
+      if (profileDoc.exists()) {
+        // Document exists, update the courses array
+        const currentCourses = profileDoc.data().courses || [];
+        await updateDoc(profileRef, {
+          courses: [...currentCourses, docRef.id],
+          updatedAt: new Date().toISOString(),
+        });
+      } else {
+        // Document doesn't exist, create it with the course
+        await setDoc(profileRef, {
+          courses: [docRef.id],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
     }
 
     // Revalidate the create page

@@ -11,17 +11,17 @@ import remarkGfm from "remark-gfm";
 function cleanText(text: string): string {
   // Remove markdown syntax
   let cleaned = text
-    .replace(/#{1,6}\s/g, '') // Remove headers
-    .replace(/\*\*/g, '') // Remove bold
-    .replace(/\*/g, '') // Remove italic
-    .replace(/`/g, '') // Remove code
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links
-    .replace(/>/g, '') // Remove blockquotes
-    .replace(/-/g, '') // Remove list markers
-    .replace(/\n/g, ' ') // Replace newlines with spaces
-    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+    .replace(/#{1,6}\s/g, "") // Remove headers
+    .replace(/\*\*/g, "") // Remove bold
+    .replace(/\*/g, "") // Remove italic
+    .replace(/`/g, "") // Remove code
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Remove links
+    .replace(/>/g, "") // Remove blockquotes
+    .replace(/-/g, "") // Remove list markers
+    .replace(/\n/g, " ") // Replace newlines with spaces
+    .replace(/\s+/g, " ") // Replace multiple spaces with single space
     .trim();
-  
+
   return cleaned;
 }
 
@@ -122,7 +122,9 @@ export default function ChapterContent({
                 <BookOpen className="h-3 w-3 mr-1" />
                 <span>{course.viewCount.total} views</span>
                 {course.viewCount.uniqueUsers.length > 0 && (
-                  <span className="ml-2">({course.viewCount.uniqueUsers.length} unique viewers)</span>
+                  <span className="ml-2">
+                    ({course.viewCount.uniqueUsers.length} unique viewers)
+                  </span>
                 )}
               </div>
             )}
@@ -155,7 +157,9 @@ export default function ChapterContent({
                       {chapter.title}
                     </h3>
                     <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
-                      {chapter.summary ? cleanText(chapter.summary).substring(0, 100) + "..." : "No description available"}
+                      {chapter.summary
+                        ? cleanText(chapter.summary).substring(0, 100) + "..."
+                        : "No description available"}
                     </p>
                   </div>
                 </div>
@@ -261,16 +265,18 @@ export default function ChapterContent({
             <BookOpen className="h-3 w-3 mr-1" />
             <span>{course.viewCount.total} views</span>
             {course.viewCount.uniqueUsers.length > 0 && (
-              <span className="ml-2">({course.viewCount.uniqueUsers.length} unique viewers)</span>
+              <span className="ml-2">
+                ({course.viewCount.uniqueUsers.length} unique viewers)
+              </span>
             )}
           </div>
         )}
       </div>
 
       {/* Video Embed */}
-      {currentChapter.videoId && (
-        <div className="mb-8">
-          <div className="aspect-video w-full max-w-4xl mx-auto">
+      <div className="mb-8">
+        <div className="aspect-video w-full max-w-4xl mx-auto">
+          {currentChapter.videoId ? (
             <iframe
               src={`https://www.youtube.com/embed/${currentChapter.videoId}`}
               title={currentChapter.title}
@@ -278,22 +284,34 @@ export default function ChapterContent({
               allowFullScreen
               className="w-full h-full rounded-lg shadow-lg"
             />
-          </div>
+          ) : (
+            <div className="w-full h-full rounded-lg shadow-lg bg-muted flex flex-col items-center justify-center p-6 text-center border border-border">
+              <BookOpen className="h-12 w-12 mb-4 text-primary/50" />
+              <h3 className="text-lg font-medium mb-2">No Video Available</h3>
+              <p className="text-muted-foreground max-w-md">
+                We couldn't find a suitable video for this topic, but we've
+                generated comprehensive notes below to help you learn the
+                material.
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Chapter Content */}
       <div className="prose prose-slate dark:prose-invert max-w-4xl mx-auto">
         {currentChapter.summary ? (
           <div className="space-y-6">
-            <ReactMarkdown 
+            <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
                 h1: ({ children }) => (
                   <h1 className="text-2xl font-bold mb-4">{children}</h1>
                 ),
                 h2: ({ children }) => (
-                  <h2 className="text-xl font-semibold mb-3 mt-6">{children}</h2>
+                  <h2 className="text-xl font-semibold mb-3 mt-6">
+                    {children}
+                  </h2>
                 ),
                 h3: ({ children }) => (
                   <h3 className="text-lg font-medium mb-2 mt-4">{children}</h3>
@@ -305,22 +323,24 @@ export default function ChapterContent({
                   <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>
+                  <ol className="list-decimal pl-6 mb-4 space-y-2">
+                    {children}
+                  </ol>
                 ),
-                li: ({ children }) => (
-                  <li className="mb-1">{children}</li>
-                ),
+                li: ({ children }) => <li className="mb-1">{children}</li>,
                 strong: ({ children }) => (
                   <strong className="font-semibold">{children}</strong>
                 ),
-                em: ({ children }) => (
-                  <em className="italic">{children}</em>
-                ),
+                em: ({ children }) => <em className="italic">{children}</em>,
                 code: ({ children }) => (
-                  <code className="bg-muted px-2 py-1 rounded text-sm font-mono">{children}</code>
+                  <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                    {children}
+                  </code>
                 ),
                 blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-primary pl-4 italic my-4">{children}</blockquote>
+                  <blockquote className="border-l-4 border-primary pl-4 italic my-4">
+                    {children}
+                  </blockquote>
                 ),
               }}
             >

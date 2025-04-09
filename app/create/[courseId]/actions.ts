@@ -6,10 +6,10 @@ import { generateText } from "ai";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/app/utils/firebase";
-import { doc, getDoc, collection, setDoc, updateDoc } from "firebase/firestore";
-import { GeneratedCourse, CourseDB, Quiz, QuizQuestion } from "@/app/lib/schemas";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { GeneratedCourse, CourseDB, Quiz } from "@/app/lib/schemas";
 import { fetchYouTubeApi, youtubeApiKeyManager } from "@/app/utils/youtube-api";
-import { auth } from "@clerk/nextjs/server";
+
 // Get course data from Firebase
 export async function getCourse(courseId: string) {
   try {
@@ -49,7 +49,7 @@ export async function updateCourse(
     if (courseData.units) {
       const updatedUnits = courseData.units.map((newUnit) => {
         const existingUnit = currentData.units.find((u) => u.id === newUnit.id);
-        
+
         // For each unit, ensure it has the required structure
         const unit = {
           id: newUnit.id,
@@ -59,9 +59,9 @@ export async function updateCourse(
             return {
               id: newChapter.id,
               title: newChapter.title,
-              status: newChapter.status || "idle"
+              status: newChapter.status || "idle",
             };
-          })
+          }),
         };
 
         return unit;
@@ -89,9 +89,9 @@ export async function updateCourse(
     return { success: true };
   } catch (error) {
     console.error("Error updating course:", error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : "Unknown error occurred" 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
@@ -143,7 +143,7 @@ export async function generateChapterContent(
       }
       return unit;
     });
-    
+
     // Update course in Firebase
     await updateDoc(courseRef, {
       units: updatedUnits,
@@ -214,11 +214,14 @@ export async function generateFullCourse(courseId: string) {
         });
 
         // Process each chapter with a separate promise
-        const chapterPromise = processChapter(courseId, unit.id, chapter.id)
-          .then((result) => {
-            chapterResults.push(result);
-            return result;
-          });
+        const chapterPromise = processChapter(
+          courseId,
+          unit.id,
+          chapter.id
+        ).then((result) => {
+          chapterResults.push(result);
+          return result;
+        });
         chapterPromises.push(chapterPromise);
       }
     }
@@ -266,14 +269,18 @@ async function searchYouTubeVideo(query: string): Promise<string | null> {
   try {
     // Clean and prepare the search query
     const cleanQuery = query
-      .replace(/[^\w\s]/g, '') // Remove special characters
+      .replace(/[^\w\s]/g, "") // Remove special characters
       .trim()
-      .split(' ')
-      .filter(word => word.length > 2) // Remove short words
-      .join(' ');
+      .split(" ")
+      .filter((word) => word.length > 2) // Remove short words
+      .join(" ");
 
     console.debug(`[YouTubeAPI] Searching YouTube for: "${cleanQuery}"`);
-    console.debug(`[YouTubeAPI] API Key status: ${JSON.stringify(youtubeApiKeyManager.getKeyStatuses())}`);
+    console.debug(
+      `[YouTubeAPI] API Key status: ${JSON.stringify(
+        youtubeApiKeyManager.getKeyStatuses()
+      )}`
+    );
 
     // Use our enhanced API fetch utility
     const data = await fetchYouTubeApi<any>(
@@ -284,32 +291,39 @@ async function searchYouTubeVideo(query: string): Promise<string | null> {
 
     // Check if we got a response
     if (!data) {
-      console.error('[YouTubeAPI] Failed to get YouTube search results - all API keys may be exhausted');
+      console.error(
+        "[YouTubeAPI] Failed to get YouTube search results - all API keys may be exhausted"
+      );
       return null;
     }
 
-    console.debug(`[YouTubeAPI] Search results count: ${data.items?.length || 0}`);
+    console.debug(
+      `[YouTubeAPI] Search results count: ${data.items?.length || 0}`
+    );
 
     if (data.items && data.items.length > 0) {
       // Try to find the most relevant video
-      const video = data.items.find((item: any) => {
-        const title = item.snippet.title.toLowerCase();
-        const description = item.snippet.description.toLowerCase();
-        const queryWords = cleanQuery.toLowerCase().split(' ');
-        
-        // Check if title or description contains most of the query words
-        const matchingWords = queryWords.filter(word => 
-          title.includes(word) || description.includes(word)
-        );
-        
-        return matchingWords.length >= Math.ceil(queryWords.length * 0.5); // At least 50% match
-      }) || data.items[0]; // Fallback to first result if no good match
+      const video =
+        data.items.find((item: any) => {
+          const title = item.snippet.title.toLowerCase();
+          const description = item.snippet.description.toLowerCase();
+          const queryWords = cleanQuery.toLowerCase().split(" ");
 
-      console.debug(`[YouTubeAPI] Selected video: ${video.snippet.title} (ID: ${video.id.videoId})`);
+          // Check if title or description contains most of the query words
+          const matchingWords = queryWords.filter(
+            (word) => title.includes(word) || description.includes(word)
+          );
+
+          return matchingWords.length >= Math.ceil(queryWords.length * 0.5); // At least 50% match
+        }) || data.items[0]; // Fallback to first result if no good match
+
+      console.debug(
+        `[YouTubeAPI] Selected video: ${video.snippet.title} (ID: ${video.id.videoId})`
+      );
       return video.id.videoId;
     }
 
-    console.warn('[YouTubeAPI] No videos found for query:', cleanQuery);
+    console.warn("[YouTubeAPI] No videos found for query:", cleanQuery);
     return null;
   } catch (error) {
     console.error("[YouTubeAPI] Error searching YouTube:", error);
@@ -333,7 +347,10 @@ export async function getYoutubeTranscript(videoId: string) {
   }
 }
 
-async function generateQuizFromTitles(unitTitle: string, chapterTitle: string): Promise<Quiz> {
+async function generateQuizFromTitles(
+  unitTitle: string,
+  chapterTitle: string
+): Promise<Quiz> {
   try {
     const prompt = `Create a quiz based on the following course content titles. The quiz should have 5 multiple-choice questions with 4 options each. Each question should test understanding of key concepts that would typically be covered in a chapter with these titles. The correct answer should be clearly indicated.
 
@@ -358,8 +375,8 @@ Format the response as a JSON object with the following structure:
     });
 
     // Extract just the JSON portion from the text
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}') + 1;
+    const jsonStart = text.indexOf("{");
+    const jsonEnd = text.lastIndexOf("}") + 1;
     text = text.slice(jsonStart, jsonEnd);
 
     // Parse the JSON response
@@ -381,7 +398,10 @@ Format the response as a JSON object with the following structure:
   }
 }
 
-async function generateQuizFromTranscript(transcript: string, chapterTitle: string): Promise<Quiz> {
+async function generateQuizFromTranscript(
+  transcript: string,
+  chapterTitle: string
+): Promise<Quiz> {
   try {
     const prompt = `Create a quiz based on the following video transcript. The quiz should have 5 multiple-choice questions with 4 options each. Each question should test understanding of key concepts from the transcript. The correct answer should be clearly indicated.
 
@@ -407,8 +427,8 @@ Format the response as a JSON object with the following structure:
     });
 
     // Extract just the JSON portion from the text
-    const jsonStart = text.indexOf('{');
-    const jsonEnd = text.lastIndexOf('}') + 1;
+    const jsonStart = text.indexOf("{");
+    const jsonEnd = text.lastIndexOf("}") + 1;
     text = text.slice(jsonStart, jsonEnd);
 
     // Parse the JSON response
@@ -494,90 +514,188 @@ async function processChapter(
 
     // Search for relevant YouTube video
     let videoId = await searchYouTubeVideo(chapter.title);
-    
+
     if (!videoId) {
       // Instead of throwing an error, we'll try a more generic search
-      console.warn(`[YouTubeAPI] No video found for "${chapter.title}", trying with course topic`);
+      console.warn(
+        `[YouTubeAPI] No video found for "${chapter.title}", trying with course topic`
+      );
       const courseTopic = courseData.courseTopic;
       videoId = await searchYouTubeVideo(`${courseTopic} ${chapter.title}`);
-      
+
       if (!videoId) {
-        console.error(`[YouTubeAPI] No video found for chapter "${chapter.title}" in course "${courseTopic}"`);
-        
-        // Update the chapter with the error
-        const errorUnits = courseData.units.map((unit) => {
-          if (unit.id === unitId) {
-            const errorChapters = unit.chapters.map((chapter) => {
-              if (chapter.id === chapterId) {
-                return {
-                  ...chapter,
-                  loading: false,
-                  error: "No suitable video found - YouTube API keys may be exhausted",
-                  status: "error",
-                };
-              }
-              return chapter;
-            });
-            return {
-              ...unit,
-              chapters: errorChapters,
-            };
+        console.error(
+          `[YouTubeAPI] No video found for chapter "${chapter.title}" in course "${courseTopic}"`
+        );
+
+        // Instead of failing, generate content from titles
+        console.debug(
+          `[YouTubeAPI] Generating fallback content for chapter without video: ${chapterId}`
+        );
+
+        try {
+          // Generate quiz from titles
+          const quiz = await generateQuizFromTitles(unit.title, chapter.title);
+
+          // Generate summary from titles
+          const summaryPrompt = `Create comprehensive lecture notes for a chapter titled "${chapter.title}" which is part of a unit called "${unit.title}" in a course about "${courseData.courseTopic}".
+          The notes should be well-structured, educational, and around 500-800 words.
+          Include key concepts, explanations, and examples where relevant.
+          Format the notes in a clear, easy-to-read structure with bullet points and sections.`;
+
+          const { text: summary } = await generateText({
+            model: google("gemini-2.0-flash-001"),
+            prompt: summaryPrompt,
+          });
+
+          // Get the latest course data
+          const latestCourseSnap = await getDoc(courseRef);
+          if (!latestCourseSnap.exists()) {
+            throw new Error("Course not found");
           }
-          return unit;
-        });
-        
-        // Update course in Firebase with error status
-        await updateDoc(courseRef, {
-          units: errorUnits,
-          updatedAt: new Date().toISOString(),
-        });
-        
-        return { success: false, chapterId, error: "No suitable video found - YouTube API keys may be exhausted" };
+          const latestCourseData = latestCourseSnap.data() as GeneratedCourse;
+
+          // Update the chapter with the generated content (without video)
+          const fallbackUnits = latestCourseData.units.map((unit) => {
+            if (unit.id === unitId) {
+              const updatedChapters = unit.chapters.map((chapter) => {
+                if (chapter.id === chapterId) {
+                  return {
+                    ...chapter,
+                    videoId: null,
+                    quiz,
+                    summary,
+                    loading: false,
+                    status: "success",
+                    error: null,
+                  };
+                }
+                return chapter;
+              });
+              return {
+                ...unit,
+                chapters: updatedChapters,
+              };
+            }
+            return unit;
+          });
+
+          // Update course in Firebase with fallback content
+          await updateDoc(courseRef, {
+            units: fallbackUnits,
+            updatedAt: new Date().toISOString(),
+          });
+
+          console.debug(
+            `Successfully generated fallback content for chapter: ${chapterId}`
+          );
+          return {
+            success: true,
+            chapterId,
+            note: "Generated content without YouTube video",
+          };
+        } catch (fallbackError) {
+          console.error(
+            `Error generating fallback content for chapter ${chapterId}:`,
+            fallbackError
+          );
+
+          // If even fallback content generation fails, update with error
+          const errorUnits = courseData.units.map((unit) => {
+            if (unit.id === unitId) {
+              const errorChapters = unit.chapters.map((chapter) => {
+                if (chapter.id === chapterId) {
+                  return {
+                    ...chapter,
+                    loading: false,
+                    error: `Failed to generate content: ${
+                      (fallbackError as Error).message
+                    }`,
+                    status: "error",
+                  };
+                }
+                return chapter;
+              });
+              return {
+                ...unit,
+                chapters: errorChapters,
+              };
+            }
+            return unit;
+          });
+
+          // Update course in Firebase with error status
+          await updateDoc(courseRef, {
+            units: errorUnits,
+            updatedAt: new Date().toISOString(),
+          });
+
+          return {
+            success: false,
+            chapterId,
+            error: `Failed to generate fallback content: ${
+              (fallbackError as Error).message
+            }`,
+          };
+        }
       }
     }
 
     // If we have a videoId, try to get more details about the video (title, etc)
     if (videoId) {
       console.debug(`[YouTubeAPI] Fetching details for video ID: ${videoId}`);
-      
+
       // Use enhanced API utility for video details
       const videoDetails = await fetchYouTubeApi<any>(
         `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}`
       );
-      
+
       if (videoDetails?.items?.[0]) {
         const video = videoDetails.items[0];
-        console.debug(`[YouTubeAPI] Video title: ${video.snippet.title}, Duration: ${video.contentDetails.duration}`);
+        console.debug(
+          `[YouTubeAPI] Video title: ${video.snippet.title}, Duration: ${video.contentDetails.duration}`
+        );
       }
     }
 
     // Get transcript from YouTube video
-    const { transcript, success: successTranscript } = await getYoutubeTranscript(videoId);
-    
+    const { transcript, success: successTranscript } =
+      await getYoutubeTranscript(videoId);
+
     let quiz: Quiz;
     let summary: string;
 
     if (!successTranscript || !transcript) {
-      console.warn("[YouTubeAPI] No transcript available, generating quiz from titles");
+      console.warn(
+        `[YouTubeAPI] No transcript available for video ${videoId}, generating quiz and summary from titles`
+      );
 
       // Generate quiz from titles
       quiz = await generateQuizFromTitles(unit.title, chapter.title);
-      
+
       // Generate summary from titles
       const summaryPrompt = `Create comprehensive lecture notes for a chapter titled "${chapter.title}" which is part of a unit called "${unit.title}" in a course about "${courseData.courseTopic}".
       The notes should be well-structured, educational, and around 500-800 words.
       Include key concepts, explanations, and examples where relevant.
       Format the notes in a clear, easy-to-read structure with bullet points and sections.`;
-      
+
       const { text: summaryText } = await generateText({
         model: google("gemini-2.0-flash-001"),
         prompt: summaryPrompt,
       });
       summary = summaryText;
+
+      console.debug(
+        `Successfully generated content from titles for chapter: ${chapterId} (video found but no transcript)`
+      );
     } else {
+      console.debug(
+        `[YouTubeAPI] Successfully retrieved transcript for video ${videoId}`
+      );
+
       // Generate quiz from transcript
       quiz = await generateQuizFromTranscript(transcript, chapter.title);
-      
+
       // Generate summary from transcript
       const summaryPrompt = `Create comprehensive lecture notes based on the following video transcript for a chapter titled "${chapter.title}" which is part of a unit called "${unit.title}" in a course about "${courseData.courseTopic}".
       
@@ -587,12 +705,16 @@ async function processChapter(
       The notes should be well-structured, educational, and around 500-800 words.
       Include key concepts, explanations, and examples from the transcript.
       Format the notes in a clear, easy-to-read structure with bullet points and sections.`;
-      
+
       const { text: summaryText } = await generateText({
         model: google("gemini-2.0-flash-001"),
         prompt: summaryPrompt,
       });
       summary = summaryText;
+
+      console.debug(
+        `Successfully generated content from transcript for chapter: ${chapterId}`
+      );
     }
 
     // Get the latest course data to ensure we're working with the most recent state
@@ -609,12 +731,13 @@ async function processChapter(
           if (chapter.id === chapterId) {
             return {
               ...chapter,
-              videoId,
+              // Set videoId explicitly to null if it's not available
+              videoId: videoId || null,
               quiz,
               summary,
               loading: false,
               status: "success",
-              error: undefined,
+              error: null,
             };
           }
           return chapter;
@@ -639,15 +762,15 @@ async function processChapter(
     return { success: true, chapterId };
   } catch (error) {
     console.error(`Error generating chapter ${chapterId}:`, error);
-    
+
     try {
       // Update the chapter with the error
       const courseRef = doc(db, "courses", courseId);
       const courseSnap = await getDoc(courseRef);
-      
+
       if (courseSnap.exists()) {
         const courseData = courseSnap.data() as GeneratedCourse;
-        
+
         // Update the units with the error
         const errorUnits = courseData.units.map((unit) => {
           if (unit.id === unitId) {
@@ -669,7 +792,7 @@ async function processChapter(
           }
           return unit;
         });
-        
+
         // Update course in Firebase with error status
         await updateDoc(courseRef, {
           units: errorUnits,
@@ -677,9 +800,12 @@ async function processChapter(
         });
       }
     } catch (updateError) {
-      console.error(`Failed to update error status for chapter ${chapterId}:`, updateError);
+      console.error(
+        `Failed to update error status for chapter ${chapterId}:`,
+        updateError
+      );
     }
-    
+
     return { success: false, chapterId, error: (error as Error).message };
   }
 }
