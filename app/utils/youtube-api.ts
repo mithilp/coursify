@@ -61,6 +61,10 @@ class YouTubeApiKeyManager {
       { key: process.env.YOUTUBE_API_KEY_4, name: "YOUTUBE_API_KEY_4" },
       { key: process.env.YOUTUBE_API_KEY_5, name: "YOUTUBE_API_KEY_5" },
       { key: process.env.YOUTUBE_API_KEY_6, name: "YOUTUBE_API_KEY_6" },
+      { key: process.env.YOUTUBE_API_KEY_7, name: "YOUTUBE_API_KEY_7" },
+      { key: process.env.YOUTUBE_API_KEY_8, name: "YOUTUBE_API_KEY_8" },
+      { key: process.env.YOUTUBE_API_KEY_9, name: "YOUTUBE_API_KEY_9" },
+      { key: process.env.YOUTUBE_API_KEY_10, name: "YOUTUBE_API_KEY_10" },
     ].filter((config) => Boolean(config.key)) as {
       key: string;
       name: string;
