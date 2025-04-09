@@ -144,15 +144,7 @@ export default function InteractionsSidebar({
 
   // Handle show/hide answers
   const handleShowAnswers = () => {
-    if (showAnswers) {
-      // If hiding answers, reset the quiz
-      handleRetry();
-    } else {
-      // If showing answers, mark all correct answers
-      const correctAnswers = quiz?.questions.map(q => q.correctAnswer) || [];
-      setSelectedAnswers(correctAnswers);
-      setShowAnswers(true);
-    }
+    setShowAnswers(!showAnswers);
   };
 
   // Check if an answer is correct
@@ -210,8 +202,6 @@ export default function InteractionsSidebar({
                           isSubmitted && isSelected && !correct;
                         const selectedAndCorrect =
                           isSubmitted && isSelected && correct;
-                        const unselectedButCorrect =
-                          isSubmitted && !isSelected && correct;
                         const showAsCorrect = showAnswers && correct;
 
                         return (
@@ -230,24 +220,19 @@ export default function InteractionsSidebar({
                                   : ""
                               }
                               ${
-                                (selectedAndCorrect || showAsCorrect) && isSubmitted
+                                selectedAndCorrect
                                   ? "bg-green-100 border border-green-300 text-green-700"
                                   : ""
                               }
                               ${
-                                unselectedButCorrect && isSubmitted
+                                showAsCorrect && !isSelected
                                   ? "bg-green-100 border border-green-300 text-green-700"
                                   : ""
                               }
                               ${!isSubmitted ? "hover:bg-muted" : ""}
                               ${
-                                !isSelected && !unselectedButCorrect && !showAsCorrect
+                                !isSelected && !selectedAndCorrect && !showAsCorrect
                                   ? "border border-border"
-                                  : ""
-                              }
-                              ${
-                                showAnswers && quiz?.questions[questionIndex].correctAnswer === optionIndex
-                                  ? "bg-green-50 border border-green-200 text-green-700"
                                   : ""
                               }
                             `}
@@ -269,35 +254,27 @@ export default function InteractionsSidebar({
                                   : ""
                               }
                               ${
-                                (selectedAndCorrect || showAsCorrect) && isSubmitted
+                                selectedAndCorrect
                                   ? "border-green-500 bg-green-500"
                                   : ""
                               }
                               ${
-                                unselectedButCorrect && isSubmitted
+                                showAsCorrect && !isSelected
                                   ? "border-green-500 bg-green-500"
                                   : ""
                               }
                               ${
-                                !isSelected && !unselectedButCorrect && !showAsCorrect
+                                !isSelected && !selectedAndCorrect && !showAsCorrect
                                   ? "border-input"
-                                  : ""
-                              }
-                              ${
-                                showAnswers && quiz?.questions[questionIndex].correctAnswer === optionIndex
-                                  ? "border-green-500 bg-green-500"
                                   : ""
                               }
                             `}
                             >
-                              {(selectedAndCorrect || unselectedButCorrect || showAsCorrect) && isSubmitted && (
+                              {(selectedAndCorrect || (showAsCorrect && !isSelected)) && (
                                 <Check className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                               )}
                               {selectedButWrong && (
                                 <AlertCircle className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
-                              )}
-                              {showAnswers && quiz?.questions[questionIndex].correctAnswer === optionIndex && (
-                                <Check className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                               )}
                             </div>
                             <span>{option}</span>
