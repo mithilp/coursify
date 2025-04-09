@@ -118,12 +118,12 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
         {/* Mobile Navigation Menu */}
         <div
           className={`
-            fixed inset-0 top-16 z-20 bg-background border-t border-border
+            fixed inset-0 top-16 z-20 border-t border-border
             transform transition-transform duration-300 ease-in-out lg:hidden
-            ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}
+            ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full hidden"}
           `}
         >
-          <div className="flex flex-col p-6 space-y-6">
+          <div className="flex flex-col p-6 space-y-6 bg-background ">
             <Link
               href="/gallery"
               className={`text-base ${isActive("/gallery")}`}
@@ -134,17 +134,7 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
 
             {isSignedIn ? (
               <>
-                <Link
-                  href={profileUrl}
-                  className={`text-base ${isActive(profileUrl)}`}
-                  onClick={closeMobileMenu}
-                >
-                  Profile
-                </Link>
                 <div className="py-2">
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Account
-                  </div>
                   <div onClick={closeMobileMenu} className="relative">
                     {!isLoaded && (
                       <Skeleton className="w-8 h-8 rounded-full absolute" />

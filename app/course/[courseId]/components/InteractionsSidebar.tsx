@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, AlertCircle, MessageSquare, RotateCcw, Eye, Send } from "lucide-react";
+import {
+  Check,
+  AlertCircle,
+  MessageSquare,
+  RotateCcw,
+  Eye,
+  Send,
+} from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { generateChatResponse } from "../actions";
 
@@ -93,7 +100,9 @@ export default function InteractionsSidebar({
           ...prev,
           {
             id: (Date.now() + 1).toString(),
-            text: result.response || "I'm sorry, I couldn't generate a response. Please try again.",
+            text:
+              result.response ||
+              "I'm sorry, I couldn't generate a response. Please try again.",
             isUser: false,
           },
         ]);
@@ -163,7 +172,7 @@ export default function InteractionsSidebar({
       : 0;
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-4 pt-10 md:p-6">
       <Tabs defaultValue="quiz">
         <TabsList className="w-full mb-4">
           <TabsTrigger value="quiz" className="flex-1 cursor-pointer">
@@ -231,7 +240,9 @@ export default function InteractionsSidebar({
                               }
                               ${!isSubmitted ? "hover:bg-muted" : ""}
                               ${
-                                !isSelected && !selectedAndCorrect && !showAsCorrect
+                                !isSelected &&
+                                !selectedAndCorrect &&
+                                !showAsCorrect
                                   ? "border border-border"
                                   : ""
                               }
@@ -264,13 +275,16 @@ export default function InteractionsSidebar({
                                   : ""
                               }
                               ${
-                                !isSelected && !selectedAndCorrect && !showAsCorrect
+                                !isSelected &&
+                                !selectedAndCorrect &&
+                                !showAsCorrect
                                   ? "border-input"
                                   : ""
                               }
                             `}
                             >
-                              {(selectedAndCorrect || (showAsCorrect && !isSelected)) && (
+                              {(selectedAndCorrect ||
+                                (showAsCorrect && !isSelected)) && (
                                 <Check className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                               )}
                               {selectedButWrong && (

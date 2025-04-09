@@ -112,7 +112,7 @@ export default function ChapterContent({
         </nav>
 
         {/* Unit Title and Description */}
-        <div className="mb-6">
+        <div className="mb-6 pt-6">
           <h1 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">
             Unit {unitIndex + 1}: {currentUnit.title}
           </h1>
