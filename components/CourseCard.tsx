@@ -27,28 +27,86 @@ export function CourseCard({ course }: CourseCardProps) {
 
   const handlePrivacyChange = async (checked: boolean) => {
     try {
+      console.log("Starting privacy update for course:", course.id);
+      
+      // Verify Firebase is initialized
+      if (!db) {
+        console.error("Firebase not initialized");
+        return;
+      }
+
+      // Create document reference
       const courseRef = doc(db, "courses", course.id);
-      await updateDoc(courseRef, {
-        isPublic: checked,
-        updatedAt: new Date().toISOString()
-      });
-      setIsPublic(checked);
-      router.refresh();
+      console.log("Document reference created:", courseRef.path);
+
+      // Try to get the document first
+      try {
+        const courseDoc = await getDoc(courseRef);
+        console.log("Document exists:", courseDoc.exists());
+        if (courseDoc.exists()) {
+          console.log("Current document data:", courseDoc.data());
+        }
+      } catch (getError) {
+        console.error("Error getting document:", getError);
+      }
+
+      // Try to update the document
+      try {
+        console.log("Attempting to update document with:", { isPublic: checked });
+        await updateDoc(courseRef, {
+          isPublic: checked,
+          updatedAt: new Date().toISOString()
+        });
+        console.log("Update successful");
+        setIsPublic(checked);
+        router.refresh();
+      } catch (updateError) {
+        console.error("Error updating document:", updateError);
+        if (updateError instanceof Error) {
+          console.error("Update error details:", {
+            message: updateError.message,
+            name: updateError.name,
+            stack: updateError.stack
+          });
+        }
+      }
     } catch (error) {
-      console.error("Error updating course privacy:", error);
+      console.error("General error in privacy update:", error);
     }
   };
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this course?")) {
       try {
-        console.log("Deleting course:", course.id);
+        console.log("Starting delete operation for course:", course.id);
+        
+        // Verify Firebase is initialized
+        if (!db) {
+          console.error("Firebase not initialized");
+          return;
+        }
+
+        // Create document reference
         const courseRef = doc(db, "courses", course.id);
-        console.log("Deleting course:", courseRef);
-        await deleteDoc(courseRef);
-        router.refresh();
+        console.log("Document reference created:", courseRef.path);
+
+        // Try to delete
+        try {
+          await deleteDoc(courseRef);
+          console.log("Delete successful");
+          router.refresh();
+        } catch (deleteError) {
+          console.error("Error deleting document:", deleteError);
+          if (deleteError instanceof Error) {
+            console.error("Delete error details:", {
+              message: deleteError.message,
+              name: deleteError.name,
+              stack: deleteError.stack
+            });
+          }
+        }
       } catch (error) {
-        console.error("Error deleting course:", error);
+        console.error("General error in delete operation:", error);
       }
     }
   };
@@ -71,7 +129,7 @@ export function CourseCard({ course }: CourseCardProps) {
           {formatDistanceToNow(new Date(course.createdAt), { addSuffix: true })}
         </div>
       </CardContent>
-      <div className="p-4 border-t flex items-center justify-between">
+      {/* <div className="p-4 border-t flex items-center justify-between">
         <div className="flex items-center gap-2">
           {isPublic ? (
             <>
@@ -97,7 +155,7 @@ export function CourseCard({ course }: CourseCardProps) {
         >
           <Trash2 className="h-4 w-4" />
         </Button>
-      </div>
+      </div> */}
     </Card>
   );
 } 
