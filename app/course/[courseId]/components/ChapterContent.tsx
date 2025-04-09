@@ -129,6 +129,11 @@ export default function ChapterContent({
               </div>
             )}
           </div>
+          {course.description && (
+            <p className="text-sm md:text-base font-medium text-foreground mb-2">
+              Course: {course.description}
+            </p>
+          )}
           {currentUnit.description && (
             <p className="text-muted-foreground text-sm md:text-base mb-6">
               {currentUnit.description}
@@ -249,8 +254,8 @@ export default function ChapterContent({
         </span>
       </nav>
 
-      {/* Chapter Title */}
-      <div className="mb-4 md:mb-8">
+      {/* Chapter Title and Content */}
+      <div className="mb-6">
         <div className="text-xs md:text-sm text-muted-foreground mb-1 md:mb-2">
           UNIT {unitIndex + 1} · CHAPTER{" "}
           {currentUnit.chapters.findIndex(
@@ -260,6 +265,13 @@ export default function ChapterContent({
         <h1 className="text-xl md:text-3xl font-bold mb-2">
           {currentChapter.title}
         </h1>
+
+        {course.description && (
+          <p className="text-sm md:text-base font-medium text-foreground mb-3">
+            Course: {course.description}
+          </p>
+        )}
+
         {course.viewCount && (
           <div className="flex items-center text-xs text-muted-foreground mb-3">
             <BookOpen className="h-3 w-3 mr-1" />

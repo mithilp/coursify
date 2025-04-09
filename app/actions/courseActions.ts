@@ -41,10 +41,10 @@ export async function generateChapters(
         .map((unit, index) => `Unit ${index + 1}: ${unit.title}`)
         .join("\n");
 
-      prompt = `Create a course on "${courseTopic}" with the following units:\n${unitsString}\n\nFor each unit, generate 3-5 chapters with brief descriptions. The course should be educational and well-structured.`;
+      prompt = `Create a course on "${courseTopic}" with the following units:\n${unitsString}\n\nFor each unit, generate 3-5 chapters with brief descriptions. Also provide a short one-sentence course description that summarizes the course. The course should be educational and well-structured.`;
     } else {
       // No units provided, let the AI generate the structure
-      prompt = `Create a comprehensive course on "${courseTopic}". Generate 4-5 unites units and 3-5 chapters per unit with brief descriptions. The course should be educational and well-structured.`;
+      prompt = `Create a comprehensive course on "${courseTopic}". Generate 4-5 unites units and 3-5 chapters per unit with brief descriptions. Also provide a short one-sentence course description that summarizes the course. The course should be educational and well-structured.`;
     }
 
     // Using Zod schema with generateObject

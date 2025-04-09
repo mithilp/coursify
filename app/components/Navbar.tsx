@@ -69,12 +69,6 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
           {isSignedIn ? (
             <>
               <Link
-                href="/dashboard"
-                className={`text-sm ${isActive("/dashboard")}`}
-              >
-                Dashboard
-              </Link>
-              <Link
                 href={profileUrl}
                 className={`text-sm ${isActive(profileUrl)}`}
               >
@@ -140,13 +134,6 @@ export default function Navbar({ isSignedIn }: NavbarProps) {
 
             {isSignedIn ? (
               <>
-                <Link
-                  href="/dashboard"
-                  className={`text-base ${isActive("/dashboard")}`}
-                  onClick={closeMobileMenu}
-                >
-                  Dashboard
-                </Link>
                 <Link
                   href={profileUrl}
                   className={`text-base ${isActive(profileUrl)}`}

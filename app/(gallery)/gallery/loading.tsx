@@ -11,7 +11,7 @@ const loading = () => {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
-          <Card key={i} className="h-full">
+          <Card key={i} className="h-full py-4">
             <CardHeader className="pb-4">
               <Skeleton className="h-6 w-3/4 mb-2" />
               <Skeleton className="h-4 w-1/2" />
@@ -27,6 +27,6 @@ const loading = () => {
       </div>
     </div>
   );
-}
+};
 
 export default loading;

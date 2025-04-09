@@ -39,6 +39,7 @@ import {
 } from "./actions";
 import { CourseDB } from "@/app/lib/schemas";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 
 // Types for UI component usage
 interface Chapter {
@@ -82,6 +83,14 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
     startTransition(() => {
       updateCourse(course.id, { courseTopic: title });
     });
+  };
+
+  // Update course description
+  const updateCourseDescription = (description: string) => {
+    setCourse((prev) => ({
+      ...prev,
+      description,
+    }));
   };
 
   // Update course privacy
@@ -147,7 +156,9 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
   // Add a new chapter to a unit
   const addChapter = (unitId: string) => {
     const newChapter = {
-      id: `${unitId}-chapter-${course.units.find((u) => u.id === unitId)?.chapters.length || 0 + 1}`,
+      id: `${unitId}-chapter-${
+        course.units.find((u) => u.id === unitId)?.chapters.length || 0 + 1
+      }`,
       title: "",
     };
 
@@ -236,15 +247,15 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
     try {
       // First, save the current course structure to Firestore
       const saveResult = await updateCourse(course.id, {
-        units: course.units.map(unit => ({
+        units: course.units.map((unit) => ({
           id: unit.id,
           title: unit.title,
-          chapters: unit.chapters.map(chapter => ({
+          chapters: unit.chapters.map((chapter) => ({
             id: chapter.id,
             title: chapter.title,
-            status: "idle" // Ensure each chapter has a status
-          }))
-        }))
+            status: "idle", // Ensure each chapter has a status
+          })),
+        })),
       });
 
       if (!saveResult.success) {
@@ -265,7 +276,7 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
 
       // Start generation after saving
       const result = await generateFullCourse(course.id);
-      
+
       if (result.success) {
         // Redirect to course page after successful generation
         window.location.href = `/course/${course.id}`;
@@ -275,7 +286,11 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
     } catch (error) {
       console.error("Error during course generation:", error);
       // Show error to user
-      alert(error instanceof Error ? error.message : "An error occurred during course generation");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "An error occurred during course generation"
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -449,6 +464,24 @@ export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
                   onChange={(e) => updateCourseTitle(e.target.value)}
                   placeholder="Enter course title"
                   className="w-full"
+                  disabled={isGenerating}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="course-description"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Course Description
+                </label>
+                <Textarea
+                  id="course-description"
+                  value={course.description || ""}
+                  onChange={(e) => updateCourseDescription(e.target.value)}
+                  placeholder="Enter a short course description"
+                  className="w-full resize-none"
+                  rows={3}
                   disabled={isGenerating}
                 />
               </div>
