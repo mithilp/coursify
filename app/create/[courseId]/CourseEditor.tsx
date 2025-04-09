@@ -59,55 +59,6 @@ interface CourseEditorProps {
   course: CourseDB;
 }
 
-// Example course data for editing (will be replaced with API fetch in a real app)
-const exampleCourse: CourseDB = {
-  id: "workplace-narcissism",
-  courseTopic: "Understanding Workplace Narcissism",
-  isPublic: true,
-  loading: false,
-  published: false,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  units: [
-    {
-      id: "unit-1",
-      title: "What is Narcissism?",
-      chapters: [
-        {
-          id: "chapter-1-1",
-          title: "Defining Narcissism",
-        },
-        {
-          id: "chapter-1-2",
-          title: "Symptoms and Diagnosis of Narcissism",
-        },
-        {
-          id: "chapter-1-3",
-          title: "Different Levels of Narcissism",
-        },
-      ],
-    },
-    {
-      id: "unit-2",
-      title: "The Impact of Narcissistic Behavior",
-      chapters: [
-        {
-          id: "chapter-2-1",
-          title: "Impact on Relationships",
-        },
-        {
-          id: "chapter-2-2",
-          title: "Narcissism in the Workplace",
-        },
-        {
-          id: "chapter-2-3",
-          title: "Psychological Effects of Narcissistic Abuse",
-        },
-      ],
-    },
-  ],
-};
-
 export function CourseEditor({ course: initialCourse }: CourseEditorProps) {
   const [course, setCourse] = useState<CourseDB>(initialCourse);
 
