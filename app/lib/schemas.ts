@@ -38,6 +38,13 @@ export const courseSchema = z.object({
 // DATABASE TYPES
 // ---------------------
 
+// ViewCount type
+export interface ViewCount {
+  total: number;
+  uniqueUsers: string[];
+  lastViewed: string;
+}
+
 // Quiz types
 export interface QuizQuestion {
   question: string;
@@ -62,6 +69,7 @@ export interface ChapterDB {
   videoId?: string; // YouTube video ID
   quiz?: Quiz; // Quiz data
   error?: string; // Error message if generation failed
+  summary?: string; // Summary of video content
 }
 
 // Database unit type
@@ -83,9 +91,7 @@ export interface CourseDB {
   loading?: boolean;
   isPublic?: boolean;
   published?: boolean;
-  viewCount?: {
-    total: number;
-  };
+  viewCount?: ViewCount;
 }
 
 // ---------------------

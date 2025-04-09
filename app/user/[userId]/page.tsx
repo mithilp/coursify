@@ -19,13 +19,13 @@ type Course = {
 };
 
 interface UserProfilePageProps {
-  params: {
+  params: Promise<{
     userId: string;
-  };
+  }>;
 }
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
-  const { userId } = params;
+  const { userId } = await params;
 
   // Fetch user's courses from profileCourses
   const profileCoursesRef = doc(db, "profileCourses", userId);
