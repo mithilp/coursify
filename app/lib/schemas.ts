@@ -91,7 +91,6 @@ export interface CourseDB {
   loading?: boolean;
   isPublic?: boolean;
   published?: boolean;
-  userId: string;
   viewCount?: ViewCount;
 }
 
