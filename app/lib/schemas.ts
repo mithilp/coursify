@@ -28,6 +28,7 @@ export const unitSchema = z.object({
 // Define the schema for the entire course (for AI model)
 export const courseSchema = z.object({
   courseTopic: z.string().describe("The main topic of the course"),
+  description: z.string().describe("One short sentence describing the course"),
   units: z.array(unitSchema).describe("Units within the course"),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
